@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Milanote - Welcome Back</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#d0e4ff",
+                        "error-container": "#ffdad6",
+                        "on-surface-variant": "#5a4136",
+                        "inverse-surface": "#303031",
+                        "on-primary-container": "#572000",
+                        "outline-variant": "#e2bfb0",
+                        "surface": "#fbf9f9",
+                        "on-error": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#656464",
+                        "on-primary-fixed": "#351000",
+                        "primary-fixed-dim": "#ffb693",
+                        "secondary-container": "#e5e2e1",
+                        "error": "#ba1a1a",
+                        "on-background": "#1b1c1c",
+                        "surface-bright": "#fbf9f9",
+                        "on-tertiary-fixed": "#001d35",
+                        "tertiary-container": "#059eff",
+                        "outline": "#8e7164",
+                        "on-tertiary-fixed-variant": "#00497b",
+                        "tertiary-fixed-dim": "#9ccaff",
+                        "inverse-primary": "#ffb693",
+                        "surface-variant": "#e3e2e2",
+                        "surface-container-low": "#f5f3f3",
+                        "on-tertiary-container": "#003357",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#efeded",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "primary": "#a04100",
+                        "secondary": "#5f5e5e",
+                        "primary-fixed": "#ffdbcc",
+                        "tertiary": "#0062a1",
+                        "surface-container-high": "#e9e8e7",
+                        "on-secondary-fixed-variant": "#474646",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#7a3000",
+                        "primary-container": "#ff6b00",
+                        "surface-dim": "#dbdad9",
+                        "secondary-fixed": "#e5e2e1",
+                        "inverse-on-surface": "#f2f0f0",
+                        "surface-tint": "#a04100",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#e3e2e2",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "on-surface": "#1b1c1c",
+                        "background": "#fbf9f9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "grid-margin": "16px",
+                        "sm": "12px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "grid-gutter": "12px",
+                        "xs": "8px",
+                        "base": "4px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f5;
+            /* Per Style Guidance "The Base" */
+        }
+
+        .canvas-dot-pattern {
+            background-image: radial-gradient(#e0e0e0 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-surface text-on-surface min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+    <!-- Atmospheric Background Canvas Pattern -->
+    <div class="absolute inset-0 canvas-dot-pattern opacity-50 pointer-events-none"></div>
+    <!-- Login Container -->
+    <main class="relative z-10 w-full max-w-md px-grid-margin">
+        <!-- Top Branding (Optional but professional) -->
+        <div class="flex justify-center mb-xl">
+            <span class="font-display-lg-mobile text-display-lg-mobile text-primary tracking-tight">Ola_Note</span>
+        </div>
+        <!-- Login Card -->
+        <div
+            class="bg-surface-container-lowest rounded-xl p-lg shadow-[0px_2px_4px_rgba(0,0,0,0.05)] border border-outline-variant">
+            <header class="mb-lg">
+                <h1 class="font-display-lg-mobile text-display-lg-mobile text-on-background mb-base">Welcome Back</h1>
+                <p class="font-body-sm text-body-sm text-secondary">Sign in to continue your creative workflow.</p>
+            </header>
+            <form id="login-form" class="space-y-lg">
+                <!-- Email Field -->
+                <div class="group">
+                    <label class="font-label-caps text-label-caps text-on-surface-variant mb-base block"
+                        for="email">Email</label>
+                    <input
+                        class="w-full bg-transparent border-0 border-b border-outline focus:ring-0 focus:border-primary-container transition-colors py-xs px-0 font-body-lg text-body-lg placeholder-secondary/30"
+                        id="email" name="email" placeholder="your@email.com" required="" type="email">
+                </div>
+                <!-- Password Field -->
+                <div class="group">
+                    <div class="flex justify-between items-center mb-base">
+                        <label class="font-label-caps text-label-caps text-on-surface-variant block"
+                            for="password">Password</label>
+                        <a class="font-label-caps text-label-caps text-secondary hover:text-primary transition-colors"
+                            href="#">Forgot Password?</a>
+                    </div>
+                    <div class="relative">
+                        <input
+                            class="w-full bg-transparent border-0 border-b border-outline focus:ring-0 focus:border-primary-container transition-colors py-xs px-0 font-body-lg text-body-lg placeholder-secondary/30"
+                            id="password" name="password" placeholder="••••••••" required="" type="password">
+                        <button
+                            class="absolute right-0 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors"
+                            type="button">
+                            <span class="material-symbols-outlined text-[20px]">visibility</span>
+                        </button>
+                    </div>
+                </div>
+                <!-- Login Button -->
+                <button
+                    class="w-full bg-primary-container text-on-primary font-headline-md text-headline-md py-md rounded-lg shadow-sm hover:opacity-90 active:scale-[0.98] transition-all duration-200 mt-xl"
+                    type="submit">
+                    Log In
+                </button>
+            </form>
+            <!-- Social Login Divider -->
+            <div class="relative my-xl flex items-center">
+                <div class="flex-grow border-t border-outline-variant"></div>
+                <span
+                    class="px-md font-label-caps text-label-caps text-on-secondary-fixed-variant bg-surface-container-lowest">OR</span>
+                <div class="flex-grow border-t border-outline-variant"></div>
+            </div>
+            <!-- Social Logins -->
+            <div class="grid grid-cols-2 gap-md">
+                <button
+                    class="flex items-center justify-center gap-xs border border-outline rounded-lg py-sm font-label-caps text-label-caps text-on-surface hover:bg-surface-variant transition-colors">
+                    <img class="w-4 h-4"
+                        data-alt="A clean, minimalist 2D vector icon of the Google 'G' logo on a white circular background. The style is sharp and corporate, fitting for a modern professional login interface."
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBG3L7ZMSS8tKvMeH8xCSFJdqnzf6GnK_2RZvv6AWM118Wm3q8VbPEII0-JIHsHujbap-pHs43OeNqbCIkR37TyuSAQUNvTkIAVSoduqrvRVjxa9nY92h2AEhFgzWCe9K04AqH4_OALnxVJKYQOipwM64eaHuxTQwRZPKa5rkVdrGibS8fkOjno7hvnT-DkbPjLx6sSkTQYR9QXQVUsXjK1VuW_kccAnMOVGXjvs81jNh_XthZ0wXI5JdDvd4yv6fxNHBARSvAyJIA">
+                    Google
+                </button>
+                <button
+                    class="flex items-center justify-center gap-xs border border-outline rounded-lg py-sm font-label-caps text-label-caps text-on-surface hover:bg-surface-variant transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">file_download</span>
+                    Apple
+                </button>
+            </div>
+        </div>
+        <!-- Footer Link -->
+        <div class="mt-lg text-center">
+            <p class="font-body-sm text-body-sm text-on-surface-variant">
+                Don't have an account?
+                <a class="text-primary font-semibold hover:underline transition-all" href="signup.html">Sign up</a>
+            </p>
+        </div>
+    </main>
+    <!-- Side Graphic for Visual Interest (Subtle Board Layout) -->
+    <div
+        class="hidden lg:block absolute right-[-5%] top-1/2 -translate-y-1/2 w-[400px] h-[600px] pointer-events-none rotate-3">
+        <div
+            class="bg-surface-container-highest border border-outline-variant p-md rounded-xl w-64 h-48 absolute top-0 left-0 shadow-lg flex flex-col gap-base">
+            <div class="w-full h-24 bg-surface-variant rounded-lg overflow-hidden">
+                <img class="w-full h-full object-cover opacity-60"
+                    data-alt="A moody, high-contrast black and white architectural photograph of a spiral staircase in a minimalist concrete building. The lighting is dramatic, casting deep geometric shadows across the pristine surfaces, creating a professional and artistic atmosphere."
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYA_2nxoU9dlaFafRu3slg-tWKD2D_mZPuRJTn-GgdTOe7sTu4F0gVYipLFnZNQSm6eLt9_dwPD_5-sNsFdjyiw3XyObgY4u91ak_YIKo8EK_3j8sFmoTC7ccLtsAe426azDja5WzuCMVzKXafg6fXd03TwiAuHgE5TbtpMUtI4B-JZS0fT0Aa_mtLsH3cBLwYq43P_Ar9u1G9Eq5P0wEzUVzaU1FK8TKHu_oAYzxyyBtAwqfK9yStZfez2_Uyd_G3Ni1nfIyhffE">
+            </div>
+            <div class="h-2 w-3/4 bg-primary-container/20 rounded-full"></div>
+            <div class="h-2 w-1/2 bg-on-surface-variant/20 rounded-full"></div>
+        </div>
+        <div
+            class="bg-surface-container-highest border border-outline-variant p-md rounded-xl w-56 h-40 absolute bottom-12 right-12 shadow-md -rotate-6 flex flex-col gap-base">
+            <div class="flex gap-xs mb-xs">
+                <div class="w-2 h-2 rounded-full bg-error"></div>
+                <div class="w-2 h-2 rounded-full bg-primary"></div>
+                <div class="w-2 h-2 rounded-full bg-tertiary"></div>
+            </div>
+            <div class="h-2 w-full bg-on-surface-variant/10 rounded-full"></div>
+            <div class="h-2 w-5/6 bg-on-surface-variant/10 rounded-full"></div>
+            <div class="h-2 w-2/3 bg-on-surface-variant/10 rounded-full"></div>
+        </div>
+    </div>
+    <!-- Small Floating Accessory -->
+    <div class="fixed bottom-lg left-lg hidden md:block">
+        <div
+            class="bg-inverse-surface text-inverse-on-surface px-md py-sm rounded-full flex items-center gap-xs shadow-xl scale-90">
+            <span class="material-symbols-outlined text-[18px]">info</span>
+            <span class="font-label-caps text-label-caps">Privacy secured with 256-bit encryption</span>
+        </div>
+    </div>
+    <script>
+        // Micro-interaction for input highlighting
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.querySelector('label').classList.replace('text-on-surface-variant', 'text-primary');
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.querySelector('label').classList.replace('text-primary', 'text-on-surface-variant');
+            });
+        });
+
+        // Toggle password visibility
+        const togglePass = document.querySelector('button span.material-symbols-outlined');
+        if (togglePass) {
+            togglePass.parentElement.addEventListener('click', function () {
+                const passInput = document.getElementById('password');
+                if (passInput.type === 'password') {
+                    passInput.type = 'text';
+                    this.innerHTML = '<span class="material-symbols-outlined text-[20px]">visibility_off</span>';
+                } else {
+                    passInput.type = 'password';
+                    this.innerHTML = '<span class="material-symbols-outlined text-[20px]">visibility</span>';
+                }
+            });
+        }
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    window.location.href = 'home.html';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Something went wrong.');
+            }
+        });
+    </script>
+
+
+</body>
+
+</html>
