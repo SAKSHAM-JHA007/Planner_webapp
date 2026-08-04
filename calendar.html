@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Ola_Note - Calendar</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#a04100",
+                        "primary-container": "#ff6b00",
+                        "on-primary-container": "#572000",
+                        "surface": "#fbf9f9",
+                        "on-surface": "#1b1c1c",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#e3e2e2",
+                        "on-surface-variant": "#5a4136",
+                        "outline": "#8e7164",
+                        "outline-variant": "#e2bfb0",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff"
+                    },
+                    "fontFamily": { "inter": ["Inter", "sans-serif"] }
+                }
+            }
+        }
+    </script>
+    <style>
+        .milanote-grid {
+            background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px),
+                              linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .card-shadow { box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05); }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 1px;
+            background-color: #e2bfb0; /* outline-variant */
+            border: 1px solid #e2bfb0;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .calendar-cell {
+            background-color: #ffffff;
+            min-height: 120px;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .calendar-cell.other-month {
+            background-color: #f9fafb;
+            color: #9ca3af;
+        }
+        .calendar-cell.today {
+            background-color: #fff7ed;
+        }
+        .task-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .task-badge:hover {
+            opacity: 0.8;
+            border-color: rgba(0,0,0,0.1);
+        }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+    </style>
+</head>
+<body class="bg-surface font-inter text-on-surface min-h-screen pb-24">
+    <!-- TopAppBar -->
+    <header class="w-full top-0 sticky bg-surface/80 backdrop-blur-md z-40 border-b border-outline-variant">
+        <div class="flex items-center justify-between px-4 h-16 w-full max-w-7xl mx-auto">
+            <h1 class="font-bold text-2xl text-primary flex items-center gap-2">
+                <span class="material-symbols-outlined">edit_square</span> Ola_Note
+            </h1>
+            <div class="flex items-center gap-4">
+                <span id="user-greeting" class="text-sm font-semibold text-on-surface-variant hidden md:block"></span>
+                <button onclick="logout()" class="text-sm font-semibold text-primary hover:underline">Log Out</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Calendar View -->
+    <main class="milanote-grid min-h-[calc(100vh-64px)] px-4 py-8 relative">
+        <div class="max-w-6xl mx-auto bg-surface-container-lowest p-4 md:p-6 rounded-2xl card-shadow border border-outline-variant">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <h2 id="current-month-year" class="text-2xl font-bold text-on-surface"></h2>
+                <div class="flex items-center gap-2">
+                    <button onclick="changeMonth(-1)" class="p-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant">
+                        <span class="material-symbols-outlined">chevron_left</span>
+                    </button>
+                    <button onclick="goToToday()" class="px-4 py-2 rounded-lg font-semibold text-sm border border-outline-variant hover:bg-surface-variant transition-colors">Today</button>
+                    <button onclick="changeMonth(1)" class="p-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant">
+                        <span class="material-symbols-outlined">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-bold text-on-surface-variant uppercase">
+                <div>Sun</div>
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thu</div>
+                <div>Fri</div>
+                <div>Sat</div>
+            </div>
+            
+            <div id="calendar-grid" class="calendar-grid">
+                <!-- Days injected here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Task Details Modal -->
+    <div id="task-modal" class="modal fixed inset-0 bg-on-surface/50 backdrop-blur-sm z-50 items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-xl p-6 w-full max-w-md card-shadow border border-outline-variant relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-on-surface-variant hover:text-primary">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <h2 id="modal-title" class="text-xl font-bold mb-2"></h2>
+            <div class="flex items-center gap-2 mb-4" id="modal-tags"></div>
+            <p id="modal-desc" class="text-sm text-on-surface-variant mb-6"></p>
+            <div class="flex justify-end gap-3 mt-4">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BottomNavBar -->
+    <nav class="fixed bottom-0 left-0 w-full z-40 flex justify-around items-center px-4 py-2 bg-surface border-t border-outline-variant shadow-sm">
+        <a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="home.html">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span class="text-[10px] font-bold uppercase mt-1">Board</span>
+        </a>
+        <a class="flex flex-col items-center justify-center text-primary" href="calendar.html">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+            <span class="text-[10px] font-bold uppercase mt-1">Calendar</span>
+        </a>
+    </nav>
+
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) {
+            window.location.href = 'login.html';
+        } else {
+            document.getElementById('user-greeting').textContent = 'Hello, ' + user.name;
+        }
+
+        let tasks = [];
+        let currentDate = new Date();
+
+        async function fetchTasks() {
+            try {
+                const res = await fetch('/api/tasks?userId=' + user.id);
+                tasks = await res.json();
+                renderCalendar();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function getCategoryColor(category) {
+            if (!category) return 'bg-surface-variant text-on-surface-variant';
+            const cat = category.toLowerCase();
+            if (cat.includes('work') || cat.includes('design')) return 'bg-blue-100 text-blue-800';
+            if (cat.includes('urgent')) return 'bg-red-100 text-red-800';
+            if (cat.includes('personal')) return 'bg-green-100 text-green-800';
+            return 'bg-purple-100 text-purple-800';
+        }
+
+        function changeMonth(offset) {
+            currentDate.setMonth(currentDate.getMonth() + offset);
+            renderCalendar();
+        }
+
+        function goToToday() {
+            currentDate = new Date();
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            // Format Title
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('current-month-year').textContent = monthNames[month] + ' ' + year;
+
+            const firstDayOfMonth = new Date(year, month, 1);
+            const lastDayOfMonth = new Date(year, month + 1, 0);
+            
+            const startDay = firstDayOfMonth.getDay(); 
+            const daysInMonth = lastDayOfMonth.getDate();
+            
+            // Days from previous month
+            const prevMonthLastDay = new Date(year, month, 0).getDate();
+            for (let i = startDay - 1; i >= 0; i--) {
+                const dayNum = prevMonthLastDay - i;
+                const cell = createCalendarCell(year, month - 1, dayNum, true);
+                grid.appendChild(cell);
+            }
+            
+            // Days in current month
+            const today = new Date();
+            for (let i = 1; i <= daysInMonth; i++) {
+                const isToday = year === today.getFullYear() && month === today.getMonth() && i === today.getDate();
+                const cell = createCalendarCell(year, month, i, false, isToday);
+                grid.appendChild(cell);
+            }
+            
+            // Days from next month
+            const totalCells = startDay + daysInMonth;
+            const nextMonthDays = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+            for (let i = 1; i <= nextMonthDays; i++) {
+                const cell = createCalendarCell(year, month + 1, i, true);
+                grid.appendChild(cell);
+            }
+        }
+
+        function createCalendarCell(year, month, day, isOtherMonth, isToday = false) {
+            // Adjust year/month if it overflows
+            const dateObj = new Date(year, month, day);
+            const currentYear = dateObj.getFullYear();
+            const currentMonth = dateObj.getMonth();
+            const currentDay = dateObj.getDate();
+            
+            // Format date string as YYYY-MM-DD local time for comparing with task.due_date
+            const dateStr = currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-' + String(currentDay).padStart(2, '0');
+            
+            const cell = document.createElement('div');
+            cell.className = 'calendar-cell' + (isOtherMonth ? ' other-month' : '') + (isToday ? ' today' : '');
+            
+            const dayNumEl = document.createElement('div');
+            dayNumEl.className = 'text-xs font-bold mb-1 ' + (isToday ? 'text-primary bg-primary-container/20 w-6 h-6 flex items-center justify-center rounded-full' : 'text-on-surface-variant');
+            dayNumEl.textContent = currentDay;
+            cell.appendChild(dayNumEl);
+
+            // Find tasks for this day
+            const dayTasks = tasks.filter(t => {
+                if (!t.due_date) return false;
+                return t.due_date === dateStr;
+            });
+            
+            dayTasks.forEach(t => {
+                const taskEl = document.createElement('div');
+                taskEl.className = 'task-badge font-bold ' + getCategoryColor(t.category);
+                taskEl.textContent = t.title;
+                if (t.status === 'done') {
+                    taskEl.style.textDecoration = 'line-through';
+                    taskEl.style.opacity = '0.6';
+                }
+                taskEl.onclick = () => showTaskDetails(t);
+                cell.appendChild(taskEl);
+            });
+
+            return cell;
+        }
+
+        const modal = document.getElementById('task-modal');
+
+        function showTaskDetails(task) {
+            document.getElementById('modal-title').textContent = task.title;
+            document.getElementById('modal-desc').textContent = task.description || 'No description provided.';
+            
+            let tagHtml = '';
+            if (task.category) {
+                tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase ' + getCategoryColor(task.category) + '">' + task.category + '</span>';
+            }
+            tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-surface-variant text-on-surface-variant">' + 
+                (task.status === 'in_progress' ? 'In Progress' : task.status) + '</span>';
+            
+            document.getElementById('modal-tags').innerHTML = tagHtml;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        if (user) {
+            fetchTasks();
+        }
+    </script>
+</body>
+</html>
