@@ -3,14 +3,27 @@ const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
+const helmet = require('helmet');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = 3000;
 
 // Middleware
+app.use(helmet({
+    contentSecurityPolicy: false // Disabled for inline scripts/styles in development
+}));
+app.use(cors());
 app.use(express.json());
 // Serve static files from the current directory
 app.use(express.static(__dirname));
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 30, // Limit each IP to 30 requests per windowMs
+    message: { error: 'Too many requests from this IP, please try again later.' }
+});
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'home.html'));
@@ -34,7 +47,7 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
 });
 
 // Signup Route
-app.post('/api/signup', async (req, res) => {
+app.post('/api/signup', authLimiter, async (req, res) => {
     const { name, email, password } = req.body;
     
     if (!name || !email || !password) {
@@ -59,7 +72,7 @@ app.post('/api/signup', async (req, res) => {
 });
 
 // Login Route
-app.post('/api/login', (req, res) => {
+app.post('/api/login', authLimiter, (req, res) => {
     const { email, password } = req.body;
     
     if (!email || !password) {
@@ -110,12 +123,14 @@ app.post('/api/tasks', (req, res) => {
 
 app.put('/api/tasks/:id', (req, res) => {
     const taskId = req.params.id;
-    const { title, description, status, category, due_date } = req.body;
+    const { title, description, status, category, due_date, userId } = req.body;
+    if (!userId) return res.status(403).json({ error: 'Unauthorized: userId required.' });
     db.run(
-        'UPDATE tasks SET title = COALESCE(?, title), description = COALESCE(?, description), status = COALESCE(?, status), category = COALESCE(?, category), due_date = COALESCE(?, due_date) WHERE id = ?',
-        [title, description, status, category, due_date, taskId],
+        'UPDATE tasks SET title = COALESCE(?, title), description = COALESCE(?, description), status = COALESCE(?, status), category = COALESCE(?, category), due_date = COALESCE(?, due_date) WHERE id = ? AND user_id = ?',
+        [title, description, status, category, due_date, taskId, userId],
         function(err) {
             if (err) return res.status(500).json({ error: 'Database error.' });
+            if (this.changes === 0) return res.status(404).json({ error: 'Task not found or unauthorized.' });
             res.json({ success: true });
         }
     );
@@ -123,8 +138,11 @@ app.put('/api/tasks/:id', (req, res) => {
 
 app.delete('/api/tasks/:id', (req, res) => {
     const taskId = req.params.id;
-    db.run('DELETE FROM tasks WHERE id = ?', [taskId], function(err) {
+    const userId = req.query.userId || req.body.userId;
+    if (!userId) return res.status(403).json({ error: 'Unauthorized: userId required.' });
+    db.run('DELETE FROM tasks WHERE id = ? AND user_id = ?', [taskId, userId], function(err) {
         if (err) return res.status(500).json({ error: 'Database error.' });
+        if (this.changes === 0) return res.status(404).json({ error: 'Task not found or unauthorized.' });
         res.json({ success: true });
     });
 });

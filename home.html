@@ -192,6 +192,16 @@
             return new Date(dateStr).toLocaleDateString(undefined, options);
         }
 
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         function renderTasks() {
             const cols = {
                 todo: document.getElementById('col-todo'),
@@ -214,19 +224,19 @@
                 if (task.category || task.due_date) {
                     tagHtml = '<div class="flex items-center gap-2 mb-1 flex-wrap">';
                     if (task.category) {
-                        tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase ' + getCategoryColor(task.category) + '">' + task.category + '</span>';
+                        tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase ' + getCategoryColor(task.category) + '">' + escapeHtml(task.category) + '</span>';
                     }
                     if (task.due_date) {
                         const isOverdue = new Date(task.due_date) < new Date() && task.status !== 'done';
                         tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex items-center gap-1 ' + (isOverdue ? 'bg-red-100 text-red-800' : 'bg-surface-variant text-on-surface-variant') + '">';
-                        tagHtml += '<span class="material-symbols-outlined text-[12px]">schedule</span> ' + formatDate(task.due_date) + '</span>';
+                        tagHtml += '<span class="material-symbols-outlined text-[12px]">schedule</span> ' + escapeHtml(formatDate(task.due_date)) + '</span>';
                     }
                     tagHtml += '</div>';
                 }
 
                 card.innerHTML = tagHtml + 
                     '<div class="flex justify-between items-start gap-2">' +
-                        '<h4 class="font-bold text-sm leading-tight">' + task.title + '</h4>' +
+                        '<h4 class="font-bold text-sm leading-tight">' + escapeHtml(task.title) + '</h4>' +
                         '<div class="flex gap-1 shrink-0">' +
                             '<button onclick="editTask(' + task.id + ')" class="text-on-surface-variant hover:text-primary transition-colors">' +
                                 '<span class="material-symbols-outlined text-[18px]">edit</span>' +
@@ -236,7 +246,7 @@
                             '</button>' +
                         '</div>' +
                     '</div>' +
-                    (task.description ? '<p class="text-xs text-on-surface-variant line-clamp-2">' + task.description + '</p>' : '');
+                    (task.description ? '<p class="text-xs text-on-surface-variant line-clamp-2">' + escapeHtml(task.description) + '</p>' : '');
                 col.appendChild(card);
             });
 
@@ -270,7 +280,7 @@
                                 await fetch('/api/tasks/' + taskId, {
                                     method: 'PUT',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ status: toStatus })
+                                    body: JSON.stringify({ status: toStatus, userId: user.id })
                                 });
                             } catch(err) {
                                 console.error('Failed to update status', err);
@@ -310,7 +320,7 @@
         async function deleteTask(id) {
             if(!confirm('Are you sure you want to delete this task?')) return;
             try {
-                await fetch('/api/tasks/' + id, { method: 'DELETE' });
+                await fetch('/api/tasks/' + id + '?userId=' + user.id, { method: 'DELETE' });
                 tasks = tasks.filter(t => t.id !== id);
                 renderTasks();
             } catch(err) {

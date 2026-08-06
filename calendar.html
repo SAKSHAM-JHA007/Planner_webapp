@@ -275,6 +275,16 @@
             return cell;
         }
 
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         const modal = document.getElementById('task-modal');
 
         function showTaskDetails(task) {
@@ -283,10 +293,10 @@
             
             let tagHtml = '';
             if (task.category) {
-                tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase ' + getCategoryColor(task.category) + '">' + task.category + '</span>';
+                tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase ' + getCategoryColor(task.category) + '">' + escapeHtml(task.category) + '</span>';
             }
             tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-surface-variant text-on-surface-variant">' + 
-                (task.status === 'in_progress' ? 'In Progress' : task.status) + '</span>';
+                (task.status === 'in_progress' ? 'In Progress' : escapeHtml(task.status)) + '</span>';
             
             document.getElementById('modal-tags').innerHTML = tagHtml;
             modal.classList.add('active');
