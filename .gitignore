@@ -3,3 +3,5 @@ database.sqlite
 .env
 check.js
 test.js
+uploads/*
+!uploads/.gitkeep

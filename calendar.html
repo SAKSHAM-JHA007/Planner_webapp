@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html class="light" lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Ola_Note - Calendar</title>
+    <title>Ola_Note - Calendar & Important Dates</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -34,60 +36,147 @@
     <style>
         .milanote-grid {
             background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px),
-                              linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+                linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
             background-size: 24px 24px;
         }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .card-shadow { box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05); }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .card-shadow {
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.04), 0px 1px 3px rgba(0, 0, 0, 0.06);
+        }
+
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, minmax(0, 1fr));
             gap: 1px;
-            background-color: #e2bfb0; /* outline-variant */
-            border: 1px solid #e2bfb0;
-            border-radius: 0.5rem;
+            background-color: #e5e7eb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
             overflow: hidden;
         }
+
         .calendar-cell {
             background-color: #ffffff;
-            min-height: 120px;
+            min-height: 125px;
             padding: 0.5rem;
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
+            gap: 0.35rem;
+            transition: all 0.15s ease;
+            position: relative;
+            cursor: pointer;
         }
+
+        .calendar-cell:hover {
+            background-color: #fffaf5;
+        }
+
+        .calendar-cell:hover .cell-add-btn {
+            opacity: 1;
+            transform: scale(1);
+        }
+
         .calendar-cell.other-month {
             background-color: #f9fafb;
             color: #9ca3af;
         }
+
+        .calendar-cell.other-month:hover {
+            background-color: #f3f4f6;
+        }
+
         .calendar-cell.today {
             background-color: #fff7ed;
         }
+
+        .calendar-cell.selected {
+            ring: 2px solid #a04100;
+        }
+
+        .cell-add-btn {
+            opacity: 0;
+            transform: scale(0.85);
+            transition: all 0.15s ease;
+        }
+
         .task-badge {
-            font-size: 0.7rem;
-            padding: 0.2rem 0.4rem;
-            border-radius: 0.25rem;
+            font-size: 0.72rem;
+            line-height: 1.1rem;
+            padding: 0.2rem 0.45rem;
+            border-radius: 0.375rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             cursor: pointer;
-            border: 1px solid transparent;
+            border-width: 1px;
+            transition: all 0.15s ease;
+            display: flex;
+            items-center: center;
+            gap: 0.25rem;
         }
+
         .task-badge:hover {
-            opacity: 0.8;
-            border-color: rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.08);
+            filter: brightness(0.96);
         }
-        .modal { display: none; }
-        .modal.active { display: flex; }
+
+        .modal {
+            display: none;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .category-pill {
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border-width: 1.5px;
+        }
+
+        .category-pill:hover {
+            transform: scale(1.03);
+        }
+
+        .category-pill.active {
+            box-shadow: 0 0 0 2px #a04100;
+            font-weight: 700;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
+
 <body class="bg-surface font-inter text-on-surface min-h-screen pb-24">
     <!-- TopAppBar -->
     <header class="w-full top-0 sticky bg-surface/80 backdrop-blur-md z-40 border-b border-outline-variant">
         <div class="flex items-center justify-between px-4 h-16 w-full max-w-7xl mx-auto">
-            <h1 class="font-bold text-2xl text-primary flex items-center gap-2">
-                <span class="material-symbols-outlined">edit_square</span> Ola_Note
-            </h1>
+            <div class="flex items-center gap-6">
+                <a href="home.html" class="font-bold text-2xl text-primary flex items-center gap-2 hover:opacity-85 transition-opacity">
+                    <span class="material-symbols-outlined">edit_square</span> Ola_Note
+                </a>
+                <nav class="hidden md:flex items-center gap-1">
+                    <a href="home.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-lg">view_kanban</span> Kanban
+                    </a>
+                    <a href="boards.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-lg">dashboard_customize</span> My Boards
+                    </a>
+                    <a href="calendar.html" class="px-3 py-1.5 rounded-lg text-sm font-bold text-primary bg-primary/10 transition-colors flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-lg">calendar_month</span> Calendar
+                    </a>
+                </nav>
+            </div>
             <div class="flex items-center gap-4">
                 <span id="user-greeting" class="text-sm font-semibold text-on-surface-variant hidden md:block"></span>
                 <button onclick="logout()" class="text-sm font-semibold text-primary hover:underline">Log Out</button>
@@ -95,58 +184,262 @@
         </div>
     </header>
 
-    <!-- Calendar View -->
-    <main class="milanote-grid min-h-[calc(100vh-64px)] px-4 py-8 relative">
-        <div class="max-w-6xl mx-auto bg-surface-container-lowest p-4 md:p-6 rounded-2xl card-shadow border border-outline-variant">
-            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-                <h2 id="current-month-year" class="text-2xl font-bold text-on-surface"></h2>
-                <div class="flex items-center gap-2">
-                    <button onclick="changeMonth(-1)" class="p-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant">
-                        <span class="material-symbols-outlined">chevron_left</span>
-                    </button>
-                    <button onclick="goToToday()" class="px-4 py-2 rounded-lg font-semibold text-sm border border-outline-variant hover:bg-surface-variant transition-colors">Today</button>
-                    <button onclick="changeMonth(1)" class="p-2 rounded-full hover:bg-surface-variant transition-colors text-on-surface-variant">
-                        <span class="material-symbols-outlined">chevron_right</span>
-                    </button>
+    <!-- Main Content Container -->
+    <main class="milanote-grid min-h-[calc(100vh-64px)] px-3 sm:px-6 py-6 relative">
+        <div class="max-w-7xl mx-auto flex flex-col gap-6">
+
+            <!-- Top Calendar Control Card -->
+            <div class="bg-surface-container-lowest p-4 sm:p-6 rounded-2xl card-shadow border border-outline-variant/40">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <!-- Left: Month Title and Navigation -->
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl">calendar_month</span>
+                        </div>
+                        <div>
+                            <h2 id="current-month-year" class="text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight"></h2>
+                            <p id="month-summary-text" class="text-xs text-on-surface-variant">Click any date to add a birthday, event, or task</p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Navigation Buttons & Quick Add -->
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <div class="flex items-center bg-surface-variant/40 rounded-xl p-1 border border-outline-variant/40">
+                            <button onclick="changeMonth(-1)"
+                                title="Previous Month"
+                                class="p-1.5 rounded-lg hover:bg-surface-container-lowest transition-colors text-on-surface-variant">
+                                <span class="material-symbols-outlined text-xl leading-none">chevron_left</span>
+                            </button>
+                            <button onclick="goToToday()"
+                                class="px-3 py-1 rounded-lg font-bold text-xs hover:bg-surface-container-lowest transition-colors text-on-surface">
+                                Today
+                            </button>
+                            <button onclick="changeMonth(1)"
+                                title="Next Month"
+                                class="p-1.5 rounded-lg hover:bg-surface-container-lowest transition-colors text-on-surface-variant">
+                                <span class="material-symbols-outlined text-xl leading-none">chevron_right</span>
+                            </button>
+                        </div>
+
+                        <!-- Quick Category Filter Pills -->
+                        <div class="hidden lg:flex items-center gap-1.5 ml-2 border-l border-outline-variant/50 pl-3">
+                            <button onclick="setFilter('all')" id="filter-all" class="filter-btn text-xs font-semibold px-2.5 py-1 rounded-lg bg-primary text-white transition-all">All</button>
+                            <button onclick="setFilter('birthday')" id="filter-birthday" class="filter-btn text-xs font-semibold px-2.5 py-1 rounded-lg bg-pink-100 text-pink-700 hover:bg-pink-200 transition-all">🎂 Birthdays</button>
+                            <button onclick="setFilter('important')" id="filter-important" class="filter-btn text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition-all">⭐ Important</button>
+                            <button onclick="setFilter('event')" id="filter-event" class="filter-btn text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-all">📅 Events</button>
+                        </div>
+
+                        <!-- Add Event Button -->
+                        <button onclick="openAddModal()"
+                            class="ml-auto sm:ml-2 flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs bg-primary text-on-primary hover:opacity-90 active:scale-95 transition-all shadow-sm">
+                            <span class="material-symbols-outlined text-base">add</span>
+                            <span>Add Event</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upcoming Highlights Ribbon -->
+                <div id="upcoming-banner" class="mt-5 pt-4 border-t border-outline-variant/30 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm text-primary">upcoming</span> Upcoming This Month
+                        </span>
+                        <span id="upcoming-count" class="text-xs font-medium text-on-surface-variant"></span>
+                    </div>
+                    <div id="upcoming-items-list" class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                        <!-- Injected highlights -->
+                    </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-bold text-on-surface-variant uppercase">
-                <div>Sun</div>
-                <div>Mon</div>
-                <div>Tue</div>
-                <div>Wed</div>
-                <div>Thu</div>
-                <div>Fri</div>
-                <div>Sat</div>
+            <!-- Calendar Grid Card -->
+            <div class="bg-surface-container-lowest p-3 sm:p-5 rounded-2xl card-shadow border border-outline-variant/40">
+                <!-- Day Headers -->
+                <div class="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    <div class="py-1 text-red-500">Sun</div>
+                    <div class="py-1">Mon</div>
+                    <div class="py-1">Tue</div>
+                    <div class="py-1">Wed</div>
+                    <div class="py-1">Thu</div>
+                    <div class="py-1">Fri</div>
+                    <div class="py-1 text-blue-500">Sat</div>
+                </div>
+
+                <!-- Days Matrix -->
+                <div id="calendar-grid" class="calendar-grid">
+                    <!-- Days dynamically injected here -->
+                </div>
             </div>
-            
-            <div id="calendar-grid" class="calendar-grid">
-                <!-- Days injected here -->
-            </div>
+
         </div>
     </main>
 
-    <!-- Task Details Modal -->
-    <div id="task-modal" class="modal fixed inset-0 bg-on-surface/50 backdrop-blur-sm z-50 items-center justify-center p-4">
-        <div class="bg-surface-container-lowest rounded-xl p-6 w-full max-w-md card-shadow border border-outline-variant relative">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-on-surface-variant hover:text-primary">
+    <!-- Floating Action Button (FAB) -->
+    <button onclick="openAddModal()"
+        title="Add Birthday, Event, or Task"
+        class="fixed bottom-20 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group">
+        <span class="material-symbols-outlined font-bold text-2xl group-hover:rotate-90 transition-transform">add</span>
+    </button>
+
+    <!-- Add/Edit Event Modal -->
+    <div id="add-edit-modal"
+        class="modal fixed inset-0 bg-on-surface/50 backdrop-blur-sm z-50 items-center justify-center p-4">
+        <div
+            class="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg card-shadow border border-outline-variant relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeAddEditModal()" class="absolute top-4 right-4 text-on-surface-variant hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-2xl">close</span>
+            </button>
+            
+            <div class="flex items-center gap-2 mb-1">
+                <span id="modal-icon-badge" class="p-1.5 rounded-lg bg-pink-100 text-pink-700 font-bold text-lg">🎂</span>
+                <h2 id="add-modal-title" class="text-xl font-bold">Add to Calendar</h2>
+            </div>
+            <p id="add-modal-subtitle" class="text-xs text-on-surface-variant mb-4">Save birthdays, anniversaries, meetings, deadlines, and reminders</p>
+
+            <form id="event-form" class="flex flex-col gap-4">
+                <input type="hidden" id="event-id">
+
+                <!-- Quick Category Selector Pills -->
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant uppercase mb-2">Category & Type</label>
+                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2" id="category-pills-container">
+                        <button type="button" onclick="selectCategory('Birthday', '🎂', this)" class="category-pill active flex flex-col items-center gap-1 p-2 rounded-xl bg-pink-50 border-pink-200 text-pink-700 text-xs">
+                            <span class="text-lg leading-none">🎂</span>
+                            <span class="font-bold">Birthday</span>
+                        </button>
+                        <button type="button" onclick="selectCategory('Important', '⭐', this)" class="category-pill flex flex-col items-center gap-1 p-2 rounded-xl bg-amber-50 border-amber-200 text-amber-800 text-xs">
+                            <span class="text-lg leading-none">⭐</span>
+                            <span class="font-bold">Important</span>
+                        </button>
+                        <button type="button" onclick="selectCategory('Event', '📅', this)" class="category-pill flex flex-col items-center gap-1 p-2 rounded-xl bg-indigo-50 border-indigo-200 text-indigo-700 text-xs">
+                            <span class="text-lg leading-none">📅</span>
+                            <span class="font-bold">Event</span>
+                        </button>
+                        <button type="button" onclick="selectCategory('Reminder', '⏰', this)" class="category-pill flex flex-col items-center gap-1 p-2 rounded-xl bg-sky-50 border-sky-200 text-sky-700 text-xs">
+                            <span class="text-lg leading-none">⏰</span>
+                            <span class="font-bold">Reminder</span>
+                        </button>
+                        <button type="button" onclick="selectCategory('Work', '💼', this)" class="category-pill flex flex-col items-center gap-1 p-2 rounded-xl bg-blue-50 border-blue-200 text-blue-800 text-xs">
+                            <span class="text-lg leading-none">💼</span>
+                            <span class="font-bold">Work</span>
+                        </button>
+                        <button type="button" onclick="selectCategory('Personal', '🌿', this)" class="category-pill flex flex-col items-center gap-1 p-2 rounded-xl bg-emerald-50 border-emerald-200 text-emerald-800 text-xs">
+                            <span class="text-lg leading-none">🌿</span>
+                            <span class="font-bold">Personal</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="event-category" value="Birthday">
+                </div>
+
+                <!-- Custom Category / Tag (Optional text override) -->
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Title / Event Name</label>
+                    <input type="text" id="event-title" required
+                        placeholder="e.g. Alice's Birthday 🎂, Product Launch, Doctor's Appointment"
+                        class="w-full border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors">
+                </div>
+
+                <!-- Date & Status Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Date</label>
+                        <input type="date" id="event-date" required
+                            class="w-full border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Status</label>
+                        <select id="event-status"
+                            class="w-full border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors bg-white">
+                            <option value="todo">Scheduled / To Do</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="done">Completed / Done</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Description / Notes -->
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Notes / Description (Optional)</label>
+                    <textarea id="event-desc" rows="2.5"
+                        placeholder="Gift ideas, location, agenda, timing..."
+                        class="w-full border border-outline-variant rounded-xl px-3.5 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-between mt-2 pt-2 border-t border-outline-variant/30">
+                    <button type="button" id="modal-delete-btn" onclick="deleteFromModal()"
+                        class="hidden px-3 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">delete</span> Delete
+                    </button>
+                    <div class="flex gap-2 ml-auto">
+                        <button type="button" onclick="closeAddEditModal()"
+                            class="px-4 py-2.5 rounded-xl font-semibold text-xs text-on-surface-variant hover:bg-surface-variant transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="px-5 py-2.5 rounded-xl font-bold text-xs bg-primary text-on-primary hover:opacity-90 active:scale-95 transition-all shadow-sm">
+                            Save Event
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Event Details Modal -->
+    <div id="details-modal"
+        class="modal fixed inset-0 bg-on-surface/50 backdrop-blur-sm z-50 items-center justify-center p-4">
+        <div
+            class="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md card-shadow border border-outline-variant relative">
+            <button onclick="closeDetailsModal()" class="absolute top-4 right-4 text-on-surface-variant hover:text-primary transition-colors">
                 <span class="material-symbols-outlined">close</span>
             </button>
-            <h2 id="modal-title" class="text-xl font-bold mb-2"></h2>
-            <div class="flex items-center gap-2 mb-4" id="modal-tags"></div>
-            <p id="modal-desc" class="text-sm text-on-surface-variant mb-6"></p>
-            <div class="flex justify-end gap-3 mt-4">
-                <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors">Close</button>
+            
+            <div class="flex items-center gap-2 mb-3" id="details-tags"></div>
+            <h2 id="details-title" class="text-2xl font-bold mb-2 text-on-surface"></h2>
+            
+            <div class="flex items-center gap-2 text-xs font-medium text-on-surface-variant mb-4" id="details-date-row">
+                <span class="material-symbols-outlined text-base text-primary">event</span>
+                <span id="details-date-text"></span>
+            </div>
+
+            <div class="bg-surface-variant/20 rounded-xl p-3.5 mb-6 border border-outline-variant/30">
+                <label class="block text-[10px] font-bold text-on-surface-variant uppercase mb-1">Notes</label>
+                <p id="details-desc" class="text-sm text-on-surface whitespace-pre-wrap"></p>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-2 border-t border-outline-variant/30">
+                <button type="button" onclick="toggleTaskStatusFromDetails()" id="details-toggle-done-btn"
+                    class="px-3.5 py-2 rounded-xl text-xs font-bold border border-outline-variant hover:bg-surface-variant transition-colors flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-base">check_circle</span>
+                    <span id="details-toggle-done-text">Mark Done</span>
+                </button>
+                <div class="flex gap-2">
+                    <button type="button" onclick="openEditFromDetails()"
+                        class="px-3.5 py-2 rounded-xl text-xs font-bold text-primary hover:bg-primary/10 transition-colors flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">edit</span> Edit
+                    </button>
+                    <button type="button" onclick="deleteTaskFromDetails()"
+                        class="px-3.5 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">delete</span> Delete
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- BottomNavBar -->
-    <nav class="fixed bottom-0 left-0 w-full z-40 flex justify-around items-center px-4 py-2 bg-surface border-t border-outline-variant shadow-sm">
-        <a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="home.html">
+    <nav
+        class="md:hidden fixed bottom-0 left-0 w-full z-40 flex justify-around items-center px-4 py-2 bg-surface border-t border-outline-variant shadow-sm">
+        <a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
+            href="home.html">
             <span class="material-symbols-outlined">dashboard</span>
             <span class="text-[10px] font-bold uppercase mt-1">Board</span>
+        </a>
+        <a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
+            href="boards.html">
+            <span class="material-symbols-outlined">dashboard_customize</span>
+            <span class="text-[10px] font-bold uppercase mt-1">My Boards</span>
         </a>
         <a class="flex flex-col items-center justify-center text-primary" href="calendar.html">
             <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
@@ -164,53 +457,135 @@
 
         let tasks = [];
         let currentDate = new Date();
+        let currentFilter = 'all';
+        let selectedTaskForDetails = null;
 
         async function fetchTasks() {
             try {
                 const res = await fetch('/api/tasks?userId=' + user.id);
                 tasks = await res.json();
                 renderCalendar();
+                renderUpcomingRibbon();
             } catch (err) {
-                console.error(err);
+                console.error('Error fetching tasks:', err);
             }
         }
 
-        function getCategoryColor(category) {
-            if (!category) return 'bg-surface-variant text-on-surface-variant';
+        function getCategoryInfo(category) {
+            if (!category) {
+                return {
+                    pillClass: 'bg-surface-variant text-on-surface-variant border-outline-variant/40',
+                    badgeClass: 'bg-surface-variant text-on-surface-variant border-outline-variant/40',
+                    emoji: '📌',
+                    icon: 'label',
+                    label: 'General'
+                };
+            }
             const cat = category.toLowerCase();
-            if (cat.includes('work') || cat.includes('design')) return 'bg-blue-100 text-blue-800';
-            if (cat.includes('urgent')) return 'bg-red-100 text-red-800';
-            if (cat.includes('personal')) return 'bg-green-100 text-green-800';
-            return 'bg-purple-100 text-purple-800';
+            if (cat.includes('birth') || cat.includes('bday') || cat.includes('b-day')) {
+                return {
+                    pillClass: 'bg-pink-100 text-pink-800 border-pink-300',
+                    badgeClass: 'bg-pink-100 text-pink-800 border-pink-300',
+                    emoji: '🎂',
+                    icon: 'cake',
+                    label: 'Birthday'
+                };
+            }
+            if (cat.includes('imp') || cat.includes('star') || cat.includes('urgent') || cat.includes('priority')) {
+                return {
+                    pillClass: 'bg-amber-100 text-amber-900 border-amber-300',
+                    badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
+                    emoji: '⭐',
+                    icon: 'star',
+                    label: 'Important'
+                };
+            }
+            if (cat.includes('event') || cat.includes('meet') || cat.includes('party') || cat.includes('anniversary')) {
+                return {
+                    pillClass: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+                    badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+                    emoji: '📅',
+                    icon: 'event',
+                    label: 'Event'
+                };
+            }
+            if (cat.includes('remind') || cat.includes('alarm') || cat.includes('call')) {
+                return {
+                    pillClass: 'bg-sky-100 text-sky-800 border-sky-300',
+                    badgeClass: 'bg-sky-100 text-sky-800 border-sky-300',
+                    emoji: '⏰',
+                    icon: 'alarm',
+                    label: 'Reminder'
+                };
+            }
+            if (cat.includes('work') || cat.includes('design') || cat.includes('code') || cat.includes('project')) {
+                return {
+                    pillClass: 'bg-blue-100 text-blue-800 border-blue-300',
+                    badgeClass: 'bg-blue-100 text-blue-800 border-blue-300',
+                    emoji: '💼',
+                    icon: 'business_center',
+                    label: 'Work'
+                };
+            }
+            if (cat.includes('person') || cat.includes('health') || cat.includes('home')) {
+                return {
+                    pillClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                    emoji: '🌿',
+                    icon: 'favorite',
+                    label: 'Personal'
+                };
+            }
+            return {
+                pillClass: 'bg-purple-100 text-purple-800 border-purple-300',
+                badgeClass: 'bg-purple-100 text-purple-800 border-purple-300',
+                emoji: '🏷️',
+                icon: 'label',
+                label: category
+            };
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-primary', 'text-white');
+                if (btn.id === 'filter-all') btn.classList.add('bg-surface-variant', 'text-on-surface');
+            });
+            const activeBtn = document.getElementById('filter-' + filter);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-primary', 'text-white');
+            }
+            renderCalendar();
         }
 
         function changeMonth(offset) {
             currentDate.setMonth(currentDate.getMonth() + offset);
             renderCalendar();
+            renderUpcomingRibbon();
         }
 
         function goToToday() {
             currentDate = new Date();
             renderCalendar();
+            renderUpcomingRibbon();
         }
 
         function renderCalendar() {
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
-            
+
             const year = currentDate.getFullYear();
             const month = currentDate.getMonth();
-            
-            // Format Title
+
             const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             document.getElementById('current-month-year').textContent = monthNames[month] + ' ' + year;
 
             const firstDayOfMonth = new Date(year, month, 1);
             const lastDayOfMonth = new Date(year, month + 1, 0);
-            
-            const startDay = firstDayOfMonth.getDay(); 
+
+            const startDay = firstDayOfMonth.getDay();
             const daysInMonth = lastDayOfMonth.getDate();
-            
+
             // Days from previous month
             const prevMonthLastDay = new Date(year, month, 0).getDate();
             for (let i = startDay - 1; i >= 0; i--) {
@@ -218,7 +593,7 @@
                 const cell = createCalendarCell(year, month - 1, dayNum, true);
                 grid.appendChild(cell);
             }
-            
+
             // Days in current month
             const today = new Date();
             for (let i = 1; i <= daysInMonth; i++) {
@@ -226,7 +601,7 @@
                 const cell = createCalendarCell(year, month, i, false, isToday);
                 grid.appendChild(cell);
             }
-            
+
             // Days from next month
             const totalCells = startDay + daysInMonth;
             const nextMonthDays = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
@@ -237,42 +612,131 @@
         }
 
         function createCalendarCell(year, month, day, isOtherMonth, isToday = false) {
-            // Adjust year/month if it overflows
             const dateObj = new Date(year, month, day);
             const currentYear = dateObj.getFullYear();
             const currentMonth = dateObj.getMonth();
             const currentDay = dateObj.getDate();
-            
-            // Format date string as YYYY-MM-DD local time for comparing with task.due_date
+
             const dateStr = currentYear + '-' + String(currentMonth + 1).padStart(2, '0') + '-' + String(currentDay).padStart(2, '0');
-            
+
             const cell = document.createElement('div');
             cell.className = 'calendar-cell' + (isOtherMonth ? ' other-month' : '') + (isToday ? ' today' : '');
             
-            const dayNumEl = document.createElement('div');
-            dayNumEl.className = 'text-xs font-bold mb-1 ' + (isToday ? 'text-primary bg-primary-container/20 w-6 h-6 flex items-center justify-center rounded-full' : 'text-on-surface-variant');
-            dayNumEl.textContent = currentDay;
-            cell.appendChild(dayNumEl);
+            // Clicking cell opens Add Event modal for this date
+            cell.onclick = (e) => {
+                if (e.target.closest('.task-badge') || e.target.closest('.cell-add-btn')) return;
+                openAddModal(dateStr);
+            };
 
-            // Find tasks for this day
-            const dayTasks = tasks.filter(t => {
-                if (!t.due_date) return false;
-                return t.due_date === dateStr;
-            });
-            
-            dayTasks.forEach(t => {
+            // Cell Header (Day Number + Hover Add Icon)
+            const headerEl = document.createElement('div');
+            headerEl.className = 'flex items-center justify-between mb-1';
+
+            const dayNumEl = document.createElement('span');
+            dayNumEl.className = 'text-xs font-bold ' + 
+                (isToday ? 'text-white bg-primary w-6 h-6 flex items-center justify-center rounded-full shadow-sm' : 
+                 (isOtherMonth ? 'text-gray-400' : 'text-on-surface'));
+            dayNumEl.textContent = currentDay;
+            headerEl.appendChild(dayNumEl);
+
+            const addBtn = document.createElement('button');
+            addBtn.className = 'cell-add-btn w-5 h-5 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white flex items-center justify-center transition-all';
+            addBtn.title = 'Add item to ' + dateStr;
+            addBtn.innerHTML = '<span class="material-symbols-outlined text-[14px] leading-none">add</span>';
+            addBtn.onclick = (e) => {
+                e.stopPropagation();
+                openAddModal(dateStr);
+            };
+            headerEl.appendChild(addBtn);
+
+            cell.appendChild(headerEl);
+
+            // Filter tasks for this day
+            let dayTasks = tasks.filter(t => t.due_date === dateStr);
+
+            // Apply category filter if active
+            if (currentFilter !== 'all') {
+                dayTasks = dayTasks.filter(t => {
+                    const cat = (t.category || '').toLowerCase();
+                    if (currentFilter === 'birthday') return cat.includes('birth') || cat.includes('bday');
+                    if (currentFilter === 'important') return cat.includes('imp') || cat.includes('star');
+                    if (currentFilter === 'event') return cat.includes('event') || cat.includes('meet');
+                    return true;
+                });
+            }
+
+            // Render up to 3 badges
+            const maxVisible = 3;
+            const visibleTasks = dayTasks.slice(0, maxVisible);
+
+            visibleTasks.forEach(t => {
+                const info = getCategoryInfo(t.category);
                 const taskEl = document.createElement('div');
-                taskEl.className = 'task-badge font-bold ' + getCategoryColor(t.category);
-                taskEl.textContent = t.title;
-                if (t.status === 'done') {
-                    taskEl.style.textDecoration = 'line-through';
-                    taskEl.style.opacity = '0.6';
-                }
-                taskEl.onclick = () => showTaskDetails(t);
+                taskEl.className = 'task-badge font-semibold ' + info.badgeClass;
+                
+                let titleHtml = '<span class="shrink-0 text-[11px] leading-none">' + info.emoji + '</span>';
+                titleHtml += '<span class="truncate ' + (t.status === 'done' ? 'line-through opacity-60' : '') + '">' + escapeHtml(t.title) + '</span>';
+                
+                taskEl.innerHTML = titleHtml;
+                taskEl.onclick = (e) => {
+                    e.stopPropagation();
+                    showTaskDetails(t);
+                };
                 cell.appendChild(taskEl);
             });
 
+            // If more tasks, show "+N more" badge
+            if (dayTasks.length > maxVisible) {
+                const moreEl = document.createElement('div');
+                moreEl.className = 'text-[10px] font-bold text-on-surface-variant/80 hover:text-primary pl-1 transition-colors';
+                moreEl.textContent = '+' + (dayTasks.length - maxVisible) + ' more';
+                moreEl.onclick = (e) => {
+                    e.stopPropagation();
+                    showDayOverview(dateStr, dayTasks);
+                };
+                cell.appendChild(moreEl);
+            }
+
             return cell;
+        }
+
+        function renderUpcomingRibbon() {
+            const container = document.getElementById('upcoming-items-list');
+            const countEl = document.getElementById('upcoming-count');
+            container.innerHTML = '';
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            // Find all tasks for this month with due_date
+            const monthTasks = tasks.filter(t => {
+                if (!t.due_date) return false;
+                const d = new Date(t.due_date + 'T00:00:00');
+                return d.getFullYear() === year && d.getMonth() === month;
+            }).sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+
+            countEl.textContent = monthTasks.length + ' item' + (monthTasks.length === 1 ? '' : 's');
+
+            if (monthTasks.length === 0) {
+                container.innerHTML = '<span class="text-xs text-on-surface-variant/60 italic py-1">No upcoming events or birthdays scheduled this month. Click + to add one!</span>';
+                return;
+            }
+
+            monthTasks.forEach(t => {
+                const info = getCategoryInfo(t.category);
+                const item = document.createElement('button');
+                item.className = 'shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl border ' + info.badgeClass + ' hover:scale-105 transition-all text-xs font-semibold';
+                
+                const dateObj = new Date(t.due_date + 'T00:00:00');
+                const dateFormatted = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+                item.innerHTML = '<span>' + info.emoji + '</span>' +
+                    '<span class="font-bold">' + escapeHtml(t.title) + '</span>' +
+                    '<span class="opacity-70 text-[11px]">(' + dateFormatted + ')</span>';
+                
+                item.onclick = () => showTaskDetails(t);
+                container.appendChild(item);
+            });
         }
 
         function escapeHtml(str) {
@@ -285,26 +749,233 @@
                 .replace(/'/g, '&#039;');
         }
 
-        const modal = document.getElementById('task-modal');
+        // Add / Edit Modal Functions
+        const addEditModal = document.getElementById('add-edit-modal');
+        const eventForm = document.getElementById('event-form');
+
+        function selectCategory(categoryName, emoji, btn) {
+            document.getElementById('event-category').value = categoryName;
+            document.getElementById('modal-icon-badge').textContent = emoji;
+            
+            document.querySelectorAll('#category-pills-container .category-pill').forEach(pill => {
+                pill.classList.remove('active');
+            });
+            if (btn) btn.classList.add('active');
+        }
+
+        function openAddModal(dateStr = '') {
+            eventForm.reset();
+            document.getElementById('event-id').value = '';
+            document.getElementById('add-modal-title').textContent = 'Add to Calendar';
+            document.getElementById('modal-delete-btn').classList.add('hidden');
+            
+            // Set date: passed dateStr or today
+            if (dateStr) {
+                document.getElementById('event-date').value = dateStr;
+            } else {
+                const today = new Date();
+                const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+                document.getElementById('event-date').value = todayStr;
+            }
+
+            // Default category
+            const firstPill = document.querySelector('#category-pills-container .category-pill');
+            selectCategory('Birthday', '🎂', firstPill);
+            
+            addEditModal.classList.add('active');
+            setTimeout(() => document.getElementById('event-title').focus(), 100);
+        }
+
+        function closeAddEditModal() {
+            addEditModal.classList.remove('active');
+        }
+
+        function openEditModal(task) {
+            document.getElementById('event-id').value = task.id;
+            document.getElementById('event-title').value = task.title;
+            document.getElementById('event-desc').value = task.description || '';
+            document.getElementById('event-date').value = task.due_date || '';
+            document.getElementById('event-status').value = task.status || 'todo';
+            document.getElementById('add-modal-title').textContent = 'Edit Event / Task';
+            document.getElementById('modal-delete-btn').classList.remove('hidden');
+
+            const info = getCategoryInfo(task.category);
+            document.getElementById('event-category').value = task.category || 'Birthday';
+            document.getElementById('modal-icon-badge').textContent = info.emoji;
+
+            // Highlight corresponding pill
+            let matched = false;
+            document.querySelectorAll('#category-pills-container .category-pill').forEach(pill => {
+                pill.classList.remove('active');
+                if (pill.textContent.toLowerCase().includes((task.category || '').toLowerCase())) {
+                    pill.classList.add('active');
+                    matched = true;
+                }
+            });
+            if (!matched) {
+                const firstPill = document.querySelector('#category-pills-container .category-pill');
+                if (firstPill) firstPill.classList.add('active');
+            }
+
+            closeDetailsModal();
+            addEditModal.classList.add('active');
+        }
+
+        async function deleteFromModal() {
+            const id = document.getElementById('event-id').value;
+            if (!id) return;
+            if (!confirm('Are you sure you want to delete this event?')) return;
+
+            try {
+                const res = await fetch('/api/tasks/' + id + '?userId=' + user.id, { method: 'DELETE' });
+                if (res.ok) {
+                    closeAddEditModal();
+                    fetchTasks();
+                } else {
+                    alert('Failed to delete item.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Something went wrong.');
+            }
+        }
+
+        eventForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('event-id').value;
+            const payload = {
+                userId: user.id,
+                title: document.getElementById('event-title').value,
+                category: document.getElementById('event-category').value,
+                due_date: document.getElementById('event-date').value,
+                status: document.getElementById('event-status').value,
+                description: document.getElementById('event-desc').value
+            };
+
+            try {
+                let res;
+                if (id) {
+                    res = await fetch('/api/tasks/' + id, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    res = await fetch('/api/tasks', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+                if (res.ok) {
+                    closeAddEditModal();
+                    fetchTasks();
+                } else {
+                    const data = await res.json();
+                    alert('Error: ' + (data.error || 'Failed to save event.'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Something went wrong saving event.');
+            }
+        });
+
+        // View Details Modal
+        const detailsModal = document.getElementById('details-modal');
 
         function showTaskDetails(task) {
-            document.getElementById('modal-title').textContent = task.title;
-            document.getElementById('modal-desc').textContent = task.description || 'No description provided.';
+            selectedTaskForDetails = task;
+            const info = getCategoryInfo(task.category);
+
+            document.getElementById('details-title').textContent = task.title;
+            document.getElementById('details-desc').textContent = task.description || 'No notes provided.';
+
+            // Category & status badges
+            let tagHtml = '<span class="text-xs font-bold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 ' + info.badgeClass + '">' +
+                '<span>' + info.emoji + '</span> ' + escapeHtml(task.category || 'General') + '</span>';
             
-            let tagHtml = '';
-            if (task.category) {
-                tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase ' + getCategoryColor(task.category) + '">' + escapeHtml(task.category) + '</span>';
+            const isDone = task.status === 'done';
+            tagHtml += '<span class="text-xs font-bold px-2.5 py-1 rounded-lg border ' + 
+                (isDone ? 'bg-green-100 text-green-800 border-green-200' : 'bg-surface-variant text-on-surface-variant border-outline-variant/40') + '">' +
+                (isDone ? '✓ Completed' : (task.status === 'in_progress' ? '⚡ In Progress' : '⏳ Scheduled')) + '</span>';
+            
+            document.getElementById('details-tags').innerHTML = tagHtml;
+
+            // Date text
+            if (task.due_date) {
+                const dateObj = new Date(task.due_date + 'T00:00:00');
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('details-date-text').textContent = dateObj.toLocaleDateString(undefined, options);
+                document.getElementById('details-date-row').classList.remove('hidden');
+            } else {
+                document.getElementById('details-date-row').classList.add('hidden');
             }
-            tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-surface-variant text-on-surface-variant">' + 
-                (task.status === 'in_progress' ? 'In Progress' : escapeHtml(task.status)) + '</span>';
-            
-            document.getElementById('modal-tags').innerHTML = tagHtml;
-            modal.classList.add('active');
+
+            // Toggle done button state
+            const toggleText = document.getElementById('details-toggle-done-text');
+            toggleText.textContent = isDone ? 'Mark Incomplete' : 'Mark Done';
+
+            detailsModal.classList.add('active');
         }
 
-        function closeModal() {
-            modal.classList.remove('active');
+        function closeDetailsModal() {
+            detailsModal.classList.remove('active');
         }
+
+        function openEditFromDetails() {
+            if (selectedTaskForDetails) {
+                openEditModal(selectedTaskForDetails);
+            }
+        }
+
+        async function toggleTaskStatusFromDetails() {
+            if (!selectedTaskForDetails) return;
+            const newStatus = selectedTaskForDetails.status === 'done' ? 'todo' : 'done';
+            try {
+                const res = await fetch('/api/tasks/' + selectedTaskForDetails.id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus, userId: user.id })
+                });
+                if (res.ok) {
+                    selectedTaskForDetails.status = newStatus;
+                    closeDetailsModal();
+                    fetchTasks();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function deleteTaskFromDetails() {
+            if (!selectedTaskForDetails) return;
+            if (!confirm('Are you sure you want to delete this event?')) return;
+            try {
+                const res = await fetch('/api/tasks/' + selectedTaskForDetails.id + '?userId=' + user.id, { method: 'DELETE' });
+                if (res.ok) {
+                    closeDetailsModal();
+                    fetchTasks();
+                } else {
+                    alert('Failed to delete item.');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Modal backdrop and ESC key handlers
+        [addEditModal, detailsModal].forEach(m => {
+            m.addEventListener('click', (e) => {
+                if (e.target === m) m.classList.remove('active');
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeAddEditModal();
+                closeDetailsModal();
+            }
+        });
 
         function logout() {
             localStorage.removeItem('user');
@@ -316,4 +987,5 @@
         }
     </script>
 </body>
+
 </html>

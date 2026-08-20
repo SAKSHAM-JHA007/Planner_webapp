@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Visual Board - Ola_Note</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#a04100",
+                        "primary-container": "#ff6b00",
+                        "on-primary-container": "#572000",
+                        "surface": "#fbf9f9",
+                        "on-surface": "#1b1c1c",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#e3e2e2",
+                        "on-surface-variant": "#5a4136",
+                        "outline": "#8e7164",
+                        "outline-variant": "#e2bfb0",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff"
+                    },
+                    "fontFamily": { "inter": ["Inter", "sans-serif"] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .milanote-canvas {
+            background-color: #f6f5f4;
+            background-image: radial-gradient(#d3cecc 1.2px, transparent 1.2px);
+            background-size: 24px 24px;
+            cursor: grab;
+        }
+
+        .milanote-canvas.panning {
+            cursor: grabbing;
+        }
+
+        .milanote-canvas.connecting-mode {
+            cursor: crosshair !important;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .canvas-card {
+            position: absolute;
+            user-select: text;
+            cursor: default;
+            transition: box-shadow 0.15s ease, outline 0.15s ease;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.06), 0px 1px 3px rgba(0, 0, 0, 0.08);
+            border-radius: 0.875rem;
+        }
+
+        .canvas-card:hover {
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1), 0px 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .canvas-card.selected {
+            outline: 2px solid #a04100;
+        }
+
+        .canvas-card.connect-target {
+            outline: 2px dashed #ff6b00;
+            animation: pulse-border 1s infinite alternate;
+        }
+
+        @keyframes pulse-border {
+            from { outline-color: #ff6b00; }
+            to { outline-color: #a04100; }
+        }
+
+        .card-drag-handle {
+            cursor: grab;
+        }
+
+        .card-drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .tool-btn {
+            transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .tool-btn:hover {
+            transform: scale(1.08);
+        }
+
+        .tool-btn.active {
+            background-color: #a04100;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(160, 65, 0, 0.3);
+        }
+
+        .line-path {
+            cursor: pointer;
+            transition: stroke-width 0.15s ease, stroke 0.15s ease;
+        }
+
+        .line-path:hover {
+            stroke: #a04100 !important;
+            stroke-width: 3.5px !important;
+        }
+
+        .line-delete-btn {
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        .line-delete-btn:hover {
+            transform: scale(1.25);
+        }
+
+        .modal {
+            display: none;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+    </style>
+</head>
+
+<body class="bg-surface font-inter text-on-surface h-screen w-screen overflow-hidden flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="w-full h-14 bg-surface-container-lowest border-b border-outline-variant/50 px-4 flex items-center justify-between z-30 shrink-0 shadow-sm">
+        <div class="flex items-center gap-3">
+            <a href="boards.html" title="Back to All Boards" class="flex items-center gap-1.5 text-xs font-bold text-on-surface-variant hover:text-primary transition-colors py-1.5 px-2.5 rounded-lg hover:bg-surface-variant">
+                <span class="material-symbols-outlined text-lg leading-none">arrow_back</span>
+                <span>Boards</span>
+            </a>
+            <span class="text-outline-variant">/</span>
+            <div class="flex items-center gap-2">
+                <div id="board-icon-badge" class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shadow-xs">
+                    <span class="material-symbols-outlined text-base" id="header-board-icon">palette</span>
+                </div>
+                <h1 id="board-title-text" class="text-base font-extrabold text-on-surface tracking-tight truncate max-w-xs sm:max-w-md">Loading Board...</h1>
+            </div>
+        </div>
+
+        <!-- Center Controls: Mode Banner -->
+        <div id="connecting-mode-banner" class="hidden items-center gap-2 bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1 rounded-full text-xs font-bold shadow-xs animate-pulse">
+            <span class="material-symbols-outlined text-sm">linear_scale</span>
+            <span>Connector Mode: Click first card then second card to link</span>
+            <button onclick="toggleConnectingMode()" class="ml-2 text-amber-900 hover:text-red-700 font-extrabold text-sm leading-none">&times;</button>
+        </div>
+
+        <!-- Right Action Controls -->
+        <div class="flex items-center gap-2">
+            <!-- Connector Line Tool Button -->
+            <button onclick="toggleConnectingMode()" id="toggle-connect-btn"
+                title="Connect cards with lines (dotted, dashed, solid)"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-outline-variant/60 hover:border-primary text-xs font-bold text-on-surface hover:text-primary transition-all">
+                <span class="material-symbols-outlined text-base">linear_scale</span>
+                <span class="hidden sm:inline">Connect Cards</span>
+            </button>
+
+            <!-- Zoom Controls -->
+            <div class="flex items-center bg-surface-variant/40 rounded-xl p-1 border border-outline-variant/40 text-xs">
+                <button onclick="zoomCanvas(-0.1)" title="Zoom Out" class="p-1 rounded hover:bg-white text-on-surface-variant">
+                    <span class="material-symbols-outlined text-base leading-none">remove</span>
+                </button>
+                <span id="zoom-text" class="px-1.5 font-bold text-[11px] text-on-surface">100%</span>
+                <button onclick="zoomCanvas(0.1)" title="Zoom In" class="p-1 rounded hover:bg-white text-on-surface-variant">
+                    <span class="material-symbols-outlined text-base leading-none">add</span>
+                </button>
+                <button onclick="resetZoomAndPan()" title="Reset Canvas" class="p-1 rounded hover:bg-white text-on-surface-variant ml-0.5">
+                    <span class="material-symbols-outlined text-base leading-none">fit_screen</span>
+                </button>
+            </div>
+
+            <!-- Upload File Drop Button -->
+            <button onclick="triggerFileUpload()" title="Upload Image or Document / PDF"
+                class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs">
+                <span class="material-symbols-outlined text-base">upload_file</span>
+                <span class="hidden md:inline">Upload File</span>
+            </button>
+            <input type="file" id="hidden-file-input" class="hidden" accept="image/*,.pdf,.doc,.docx,.txt" onchange="handleFileInput(this)">
+        </div>
+    </header>
+
+    <!-- Canvas Viewport -->
+    <div class="relative flex-1 w-full h-full overflow-hidden">
+        
+        <!-- Left Milanote Palette Toolbar -->
+        <aside class="absolute left-4 top-4 z-20 flex flex-col gap-2 p-2 bg-surface-container-lowest rounded-2xl card-shadow border border-outline-variant/50">
+            <button onclick="spawnNoteCard()" title="Add Note / Text Card"
+                class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center bg-surface-variant/40 text-on-surface hover:bg-yellow-100 hover:text-yellow-800">
+                <span class="material-symbols-outlined text-xl">sticky_note_2</span>
+            </button>
+            <button onclick="triggerFileUpload('image')" title="Upload Image (JPG, PNG)"
+                class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center bg-surface-variant/40 text-on-surface hover:bg-pink-100 hover:text-pink-800">
+                <span class="material-symbols-outlined text-xl">image</span>
+            </button>
+            <button onclick="triggerFileUpload('document')" title="Upload Document / PDF"
+                class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center bg-surface-variant/40 text-on-surface hover:bg-red-100 hover:text-red-800">
+                <span class="material-symbols-outlined text-xl">picture_as_pdf</span>
+            </button>
+            <button onclick="spawnTodoCard()" title="Add To-Do / Checklist Card"
+                class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center bg-surface-variant/40 text-on-surface hover:bg-emerald-100 hover:text-emerald-800">
+                <span class="material-symbols-outlined text-xl">check_box</span>
+            </button>
+            <button onclick="spawnLinkCard()" title="Add Web Link / Bookmark"
+                class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center bg-surface-variant/40 text-on-surface hover:bg-blue-100 hover:text-blue-800">
+                <span class="material-symbols-outlined text-xl">link</span>
+            </button>
+            <div class="w-full h-px bg-outline-variant/40 my-0.5"></div>
+            <button onclick="toggleConnectingMode()" title="Toggle Line Drawing" id="side-connect-btn"
+                class="tool-btn w-10 h-10 rounded-xl flex items-center justify-center bg-surface-variant/40 text-on-surface hover:bg-indigo-100 hover:text-indigo-800">
+                <span class="material-symbols-outlined text-xl">linear_scale</span>
+            </button>
+        </aside>
+
+        <!-- Drop Overlay indicator -->
+        <div id="drop-zone-overlay" class="hidden absolute inset-0 bg-primary/10 border-4 border-dashed border-primary z-40 items-center justify-center pointer-events-none">
+            <div class="bg-surface-container-lowest px-8 py-6 rounded-3xl card-shadow border border-primary text-center">
+                <span class="material-symbols-outlined text-5xl text-primary mb-2">cloud_upload</span>
+                <h3 class="text-xl font-extrabold text-on-surface">Drop File on Canvas</h3>
+                <p class="text-xs text-on-surface-variant mt-1">Images & PDF documents will be added right here</p>
+            </div>
+        </div>
+
+        <!-- The Canvas Surface -->
+        <div id="canvas-surface" class="milanote-canvas absolute w-[8000px] h-[8000px] top-0 left-0 origin-top-left">
+            <!-- Dynamic SVG Connections Layer -->
+            <svg id="svg-connections" class="absolute inset-0 w-full h-full pointer-events-auto" style="z-index: 1;">
+                <defs>
+                    <marker id="arrow-dotted" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#8e7164" />
+                    </marker>
+                    <marker id="arrow-solid" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#a04100" />
+                    </marker>
+                </defs>
+                <g id="connections-group"></g>
+            </svg>
+
+            <!-- Canvas Elements Container -->
+            <div id="canvas-cards-container" class="absolute inset-0 pointer-events-none">
+                <!-- Cards injected dynamically here with pointer-events-auto -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Connection Line Style Configuration Modal -->
+    <div id="connection-modal" class="modal fixed inset-0 bg-on-surface/50 backdrop-blur-sm z-50 items-center justify-center p-4">
+        <div class="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-sm card-shadow border border-outline-variant relative">
+            <button onclick="closeConnectionModal()" class="absolute top-4 right-4 text-on-surface-variant hover:text-primary">&times;</button>
+            <h3 class="font-extrabold text-lg mb-1 text-on-surface">Connect Cards</h3>
+            <p class="text-xs text-on-surface-variant mb-4">Choose connection line style & optional label</p>
+
+            <form id="connection-form" class="flex flex-col gap-4">
+                <input type="hidden" id="conn-from-id">
+                <input type="hidden" id="conn-to-id">
+
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1.5">Line Style</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="selectLineStyle('dotted', this)" class="line-style-btn p-2 rounded-xl border border-primary bg-primary/10 text-primary font-bold text-xs">
+                            · · · Dotted
+                        </button>
+                        <button type="button" onclick="selectLineStyle('dashed', this)" class="line-style-btn p-2 rounded-xl border border-outline-variant text-on-surface-variant font-bold text-xs hover:border-primary">
+                            - - - Dashed
+                        </button>
+                        <button type="button" onclick="selectLineStyle('solid', this)" class="line-style-btn p-2 rounded-xl border border-outline-variant text-on-surface-variant font-bold text-xs hover:border-primary">
+                            ——— Solid
+                        </button>
+                    </div>
+                    <input type="hidden" id="conn-style" value="dotted">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Label / Relationship (Optional)</label>
+                    <input type="text" id="conn-label" placeholder="e.g. relates to, inspired by, leads to"
+                        class="w-full border border-outline-variant rounded-xl px-3.5 py-2 text-xs focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t border-outline-variant/30">
+                    <button type="button" onclick="closeConnectionModal()" class="px-4 py-2 rounded-xl font-semibold text-xs text-on-surface-variant hover:bg-surface-variant">Cancel</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl font-bold text-xs bg-primary text-on-primary hover:opacity-90 shadow-sm">Create Link</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Image Lightbox Modal -->
+    <div id="image-lightbox-modal" class="modal fixed inset-0 bg-black/80 backdrop-blur-md z-50 items-center justify-center p-6 cursor-pointer" onclick="this.classList.remove('active')">
+        <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center" onclick="event.stopPropagation()">
+            <img id="lightbox-img" src="" class="max-w-full max-h-[80vh] rounded-2xl shadow-2xl object-contain">
+            <p id="lightbox-caption" class="text-white text-sm font-semibold mt-3 text-center"></p>
+            <button onclick="document.getElementById('image-lightbox-modal').classList.remove('active')"
+                class="absolute -top-4 -right-4 w-9 h-9 rounded-full bg-white/20 hover:bg-white text-white hover:text-black flex items-center justify-center transition-all">
+                <span class="material-symbols-outlined text-xl">close</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) {
+            window.location.href = 'login.html';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const boardId = urlParams.get('id');
+
+        if (!boardId) {
+            window.location.href = 'boards.html';
+        }
+
+        let boardData = null;
+        let elements = [];
+        let connections = [];
+
+        // Canvas Pan & Zoom State
+        let scale = 1.0;
+        let panX = -2000;
+        let panY = -2000;
+        let isPanning = false;
+        let startPanX = 0;
+        let startPanY = 0;
+
+        // Card Dragging State
+        let draggedElement = null;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let cardStartLeft = 0;
+        let cardStartTop = 0;
+
+        // Connecting Mode State
+        let isConnectingMode = false;
+        let connectSourceCardId = null;
+
+        const canvasSurface = document.getElementById('canvas-surface');
+        const cardsContainer = document.getElementById('canvas-cards-container');
+        const connectionsGroup = document.getElementById('connections-group');
+
+        // Color palettes for notes
+        const NOTE_COLORS = {
+            yellow: '#fef9c3',
+            rose: '#ffe4e6',
+            peach: '#ffedd5',
+            green: '#dcfce7',
+            blue: '#e0f2fe',
+            purple: '#f3e8ff',
+            white: '#ffffff'
+        };
+
+        // Initialize Canvas transform
+        function updateCanvasTransform() {
+            canvasSurface.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+            document.getElementById('zoom-text').textContent = Math.round(scale * 100) + '%';
+        }
+
+        function zoomCanvas(delta) {
+            scale = Math.min(Math.max(scale + delta, 0.4), 2.0);
+            updateCanvasTransform();
+        }
+
+        function resetZoomAndPan() {
+            scale = 1.0;
+            panX = -2000;
+            panY = -2000;
+            updateCanvasTransform();
+        }
+
+        // Fetch Board Details, Elements, and Connections
+        async function fetchBoardData() {
+            try {
+                const res = await fetch(`/api/boards/${boardId}?userId=${user.id}`);
+                if (!res.ok) {
+                    alert('Board not found.');
+                    window.location.href = 'boards.html';
+                    return;
+                }
+                const data = await res.json();
+                boardData = data.board;
+                elements = data.elements || [];
+                connections = data.connections || [];
+
+                // Render Header
+                document.getElementById('board-title-text').textContent = boardData.title;
+                document.getElementById('header-board-icon').textContent = boardData.icon || 'palette';
+                const iconBadge = document.getElementById('board-icon-badge');
+                iconBadge.style.backgroundColor = (boardData.color || '#a04100') + '20';
+                iconBadge.style.color = boardData.color || '#a04100';
+
+                renderAllElements();
+                renderAllConnections();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Render Canvas Cards
+        function renderAllElements() {
+            cardsContainer.innerHTML = '';
+            elements.forEach(renderElementCard);
+        }
+
+        function renderElementCard(el) {
+            const card = document.createElement('div');
+            card.id = `card-${el.id}`;
+            card.className = 'canvas-card pointer-events-auto flex flex-col';
+            card.style.left = `${el.x}px`;
+            card.style.top = `${el.y}px`;
+            card.style.width = `${el.width || 260}px`;
+            card.style.zIndex = el.z_index || 1;
+            card.style.backgroundColor = el.color || '#ffffff';
+
+            let bodyHtml = '';
+
+            if (el.type === 'note') {
+                const contentObj = parseJSON(el.content, { title: 'Untitled Note', text: '' });
+                bodyHtml = `
+                    <div class="card-drag-handle p-3 pb-2 flex items-center justify-between border-b border-black/5">
+                        <input type="text" value="${escapeHtml(contentObj.title)}" placeholder="Note Title" 
+                            onchange="updateNoteContent(${el.id}, 'title', this.value)"
+                            class="bg-transparent font-bold text-sm text-on-surface outline-none w-full mr-2">
+                        <div class="flex items-center gap-1">
+                            <button onclick="cycleCardColor(${el.id})" title="Change Color" class="p-1 rounded hover:bg-black/5 text-on-surface-variant">
+                                <span class="material-symbols-outlined text-sm">palette</span>
+                            </button>
+                            <button onclick="deleteElement(${el.id})" title="Delete" class="p-1 rounded hover:bg-red-50 text-on-surface-variant hover:text-error">
+                                <span class="material-symbols-outlined text-sm">close</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-3 pt-2">
+                        <textarea placeholder="Type your thoughts, ideas, or notes here..." 
+                            onchange="updateNoteContent(${el.id}, 'text', this.value)"
+                            rows="4" class="w-full bg-transparent text-xs text-on-surface outline-none resize-none leading-relaxed">${escapeHtml(contentObj.text || '')}</textarea>
+                    </div>
+                `;
+            } else if (el.type === 'image') {
+                bodyHtml = `
+                    <div class="card-drag-handle p-2 pb-1.5 flex items-center justify-between border-b border-black/5">
+                        <span class="text-[11px] font-bold text-on-surface-variant truncate max-w-[180px]">${escapeHtml(el.file_name || 'Image')}</span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="deleteElement(${el.id})" title="Delete" class="p-1 rounded hover:bg-red-50 text-on-surface-variant hover:text-error">
+                                <span class="material-symbols-outlined text-sm">close</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-2">
+                        <div class="w-full max-h-72 rounded-lg overflow-hidden bg-black/5 cursor-pointer" onclick="openLightbox('${el.file_url}', '${escapeHtml(el.content || el.file_name)}')">
+                            <img src="${el.file_url}" alt="${escapeHtml(el.file_name)}" class="w-full h-auto object-cover hover:scale-105 transition-transform duration-200">
+                        </div>
+                        <input type="text" value="${escapeHtml(el.content || '')}" placeholder="Add a caption..." 
+                            onchange="updateElementDirect(${el.id}, { content: this.value })"
+                            class="w-full bg-transparent text-[11px] text-on-surface-variant italic mt-1.5 outline-none px-1">
+                    </div>
+                `;
+            } else if (el.type === 'document') {
+                const isPdf = (el.file_type && el.file_type.includes('pdf')) || (el.file_name && el.file_name.endsWith('.pdf'));
+                const sizeFormatted = el.file_size ? `${(el.file_size / (1024 * 1024)).toFixed(1)} MB` : 'PDF Doc';
+                bodyHtml = `
+                    <div class="card-drag-handle p-3 pb-2 flex items-center justify-between border-b border-black/5">
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-red-600 bg-red-100 px-2 py-0.5 rounded">DOCUMENT</span>
+                        <button onclick="deleteElement(${el.id})" title="Delete" class="p-1 rounded hover:bg-red-50 text-on-surface-variant hover:text-error">
+                            <span class="material-symbols-outlined text-sm">close</span>
+                        </button>
+                    </div>
+                    <div class="p-4 flex flex-col gap-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-red-50 border border-red-200 text-red-600 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-2xl">picture_as_pdf</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-xs text-on-surface truncate" title="${escapeHtml(el.file_name)}">${escapeHtml(el.file_name || 'Document.pdf')}</h4>
+                                <span class="text-[10px] text-on-surface-variant font-medium">${sizeFormatted}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 pt-1">
+                            <a href="${el.file_url}" target="_blank" class="flex-1 text-center py-1.5 px-3 rounded-lg bg-surface-variant text-[11px] font-bold text-on-surface hover:bg-primary hover:text-white transition-colors">
+                                Open PDF
+                            </a>
+                            <a href="${el.file_url}" download="${escapeHtml(el.file_name)}" class="p-1.5 rounded-lg border border-outline-variant/60 hover:border-primary text-on-surface-variant hover:text-primary transition-colors" title="Download">
+                                <span class="material-symbols-outlined text-base">download</span>
+                            </a>
+                        </div>
+                    </div>
+                `;
+            } else if (el.type === 'todo') {
+                const todoObj = parseJSON(el.content, { title: 'Checklist', items: [] });
+                let itemsHtml = '';
+                (todoObj.items || []).forEach((item, idx) => {
+                    itemsHtml += `
+                        <div class="flex items-center gap-2 py-1">
+                            <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleTodoItem(${el.id}, ${idx})" class="rounded text-primary focus:ring-primary h-3.5 w-3.5">
+                            <span class="text-xs ${item.done ? 'line-through opacity-50' : 'text-on-surface'} flex-1">${escapeHtml(item.text)}</span>
+                            <button onclick="removeTodoItem(${el.id}, ${idx})" class="text-on-surface-variant hover:text-error text-xs leading-none">&times;</button>
+                        </div>
+                    `;
+                });
+
+                bodyHtml = `
+                    <div class="card-drag-handle p-3 pb-2 flex items-center justify-between border-b border-black/5">
+                        <input type="text" value="${escapeHtml(todoObj.title)}" placeholder="Checklist Title"
+                            onchange="updateTodoTitle(${el.id}, this.value)"
+                            class="bg-transparent font-bold text-sm text-on-surface outline-none w-full mr-2">
+                        <button onclick="deleteElement(${el.id})" title="Delete" class="p-1 rounded hover:bg-red-50 text-on-surface-variant hover:text-error">
+                            <span class="material-symbols-outlined text-sm">close</span>
+                        </button>
+                    </div>
+                    <div class="p-3 pt-2 flex flex-col gap-1">
+                        <div class="flex flex-col">${itemsHtml}</div>
+                        <input type="text" placeholder="+ Add an item & press Enter" onkeydown="handleNewTodoKey(${el.id}, event)"
+                            class="w-full bg-transparent text-xs text-on-surface-variant mt-1.5 pt-1.5 border-t border-black/5 outline-none">
+                    </div>
+                `;
+            } else if (el.type === 'link') {
+                const linkObj = parseJSON(el.content, { url: 'https://', title: 'Web Bookmark' });
+                bodyHtml = `
+                    <div class="card-drag-handle p-3 pb-2 flex items-center justify-between border-b border-black/5">
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 bg-blue-100 px-2 py-0.5 rounded">LINK</span>
+                        <button onclick="deleteElement(${el.id})" title="Delete" class="p-1 rounded hover:bg-red-50 text-on-surface-variant hover:text-error">
+                            <span class="material-symbols-outlined text-sm">close</span>
+                        </button>
+                    </div>
+                    <div class="p-4 flex flex-col gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary text-xl">language</span>
+                            <input type="text" value="${escapeHtml(linkObj.title)}" onchange="updateLinkContent(${el.id}, 'title', this.value)" placeholder="Link Title" class="font-bold text-xs text-on-surface bg-transparent outline-none flex-1">
+                        </div>
+                        <input type="text" value="${escapeHtml(linkObj.url)}" onchange="updateLinkContent(${el.id}, 'url', this.value)" placeholder="https://..." class="text-[11px] text-blue-600 bg-transparent outline-none truncate border-b border-black/5 pb-1">
+                        <a href="${linkObj.url}" target="_blank" class="mt-1 flex items-center justify-center gap-1 py-1 px-2 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors">
+                            <span>Visit Site</span>
+                            <span class="material-symbols-outlined text-xs">open_in_new</span>
+                        </a>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = bodyHtml;
+
+            // Handle Card Click for Connecting Mode
+            card.onclick = (e) => {
+                if (isConnectingMode) {
+                    e.stopPropagation();
+                    handleCardConnectionClick(el.id);
+                }
+            };
+
+            // Setup Card Dragging
+            const handle = card.querySelector('.card-drag-handle') || card;
+            handle.addEventListener('mousedown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+                startCardDrag(el.id, e);
+            });
+
+            cardsContainer.appendChild(card);
+        }
+
+        // Card Dragging System
+        function startCardDrag(cardId, e) {
+            e.preventDefault();
+            draggedElement = elements.find(el => el.id === cardId);
+            if (!draggedElement) return;
+
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            cardStartLeft = draggedElement.x;
+            cardStartTop = draggedElement.y;
+
+            // Bring to front
+            const maxZ = Math.max(1, ...elements.map(el => el.z_index || 1)) + 1;
+            draggedElement.z_index = maxZ;
+            const cardEl = document.getElementById(`card-${cardId}`);
+            if (cardEl) cardEl.style.zIndex = maxZ;
+
+            window.addEventListener('mousemove', onCardDragMove);
+            window.addEventListener('mouseup', onCardDragEnd);
+        }
+
+        function onCardDragMove(e) {
+            if (!draggedElement) return;
+            const dx = (e.clientX - dragStartX) / scale;
+            const dy = (e.clientY - dragStartY) / scale;
+
+            draggedElement.x = Math.round(cardStartLeft + dx);
+            draggedElement.y = Math.round(cardStartTop + dy);
+
+            const cardEl = document.getElementById(`card-${draggedElement.id}`);
+            if (cardEl) {
+                cardEl.style.left = `${draggedElement.x}px`;
+                cardEl.style.top = `${draggedElement.y}px`;
+            }
+
+            renderAllConnections();
+        }
+
+        async function onCardDragEnd() {
+            if (!draggedElement) return;
+            window.removeEventListener('mousemove', onCardDragMove);
+            window.removeEventListener('mouseup', onCardDragEnd);
+
+            const updatedEl = draggedElement;
+            draggedElement = null;
+
+            try {
+                await fetch(`/api/boards/${boardId}/elements/${updatedEl.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        x: updatedEl.x,
+                        y: updatedEl.y,
+                        z_index: updatedEl.z_index
+                    })
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Dynamic SVG Connector Lines Rendering
+        function renderAllConnections() {
+            connectionsGroup.innerHTML = '';
+
+            connections.forEach(conn => {
+                const fromEl = elements.find(el => el.id === conn.from_id);
+                const toEl = elements.find(el => el.id === conn.to_id);
+                if (!fromEl || !toEl) return;
+
+                const fromCard = document.getElementById(`card-${fromEl.id}`);
+                const toCard = document.getElementById(`card-${toEl.id}`);
+                if (!fromCard || !toCard) return;
+
+                const fromW = fromEl.width || fromCard.offsetWidth || 260;
+                const fromH = fromCard.offsetHeight || 180;
+                const toW = toEl.width || toCard.offsetWidth || 260;
+                const toH = toCard.offsetHeight || 180;
+
+                // Center points
+                const fromCenterX = fromEl.x + fromW / 2;
+                const fromCenterY = fromEl.y + fromH / 2;
+                const toCenterX = toEl.x + toW / 2;
+                const toCenterY = toEl.y + toH / 2;
+
+                // Bezier Control points for smooth curvature
+                const dx = toCenterX - fromCenterX;
+                const dy = toCenterY - fromCenterY;
+                const cx1 = fromCenterX + dx * 0.4;
+                const cy1 = fromCenterY;
+                const cx2 = fromCenterX + dx * 0.6;
+                const cy2 = toCenterY;
+
+                const pathData = `M ${fromCenterX} ${fromCenterY} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${toCenterX} ${toCenterY}`;
+
+                // Determine stroke dasharray
+                let dashArray = 'none';
+                if (conn.style === 'dotted') dashArray = '4,6';
+                if (conn.style === 'dashed') dashArray = '8,8';
+
+                const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                pathEl.setAttribute('d', pathData);
+                pathEl.setAttribute('fill', 'none');
+                pathEl.setAttribute('stroke', conn.color || '#8e7164');
+                pathEl.setAttribute('stroke-width', '2.5');
+                pathEl.setAttribute('stroke-dasharray', dashArray);
+                pathEl.setAttribute('marker-end', 'url(#arrow-dotted)');
+                pathEl.setAttribute('class', 'line-path');
+
+                connectionsGroup.appendChild(pathEl);
+
+                // Optional Middle Label
+                const midX = (fromCenterX + toCenterX) / 2;
+                const midY = (fromCenterY + toCenterY) / 2;
+
+                if (conn.label) {
+                    const labelGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    labelGroup.setAttribute('transform', `translate(${midX}, ${midY})`);
+
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect.setAttribute('x', -conn.label.length * 4 - 8);
+                    rect.setAttribute('y', -10);
+                    rect.setAttribute('width', conn.label.length * 8 + 16);
+                    rect.setAttribute('height', 20);
+                    rect.setAttribute('rx', 6);
+                    rect.setAttribute('fill', '#ffffff');
+                    rect.setAttribute('stroke', '#e2bfb0');
+                    rect.setAttribute('stroke-width', '1');
+
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', 0);
+                    text.setAttribute('y', 4);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('fill', '#5a4136');
+                    text.setAttribute('font-size', '10px');
+                    text.setAttribute('font-weight', 'bold');
+                    text.textContent = conn.label;
+
+                    labelGroup.appendChild(rect);
+                    labelGroup.appendChild(text);
+                    connectionsGroup.appendChild(labelGroup);
+                }
+
+                // Delete handle button at middle
+                const delBtn = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                delBtn.setAttribute('cx', midX + (conn.label ? (conn.label.length * 4 + 14) : 0));
+                delBtn.setAttribute('cy', midY);
+                delBtn.setAttribute('r', 8);
+                delBtn.setAttribute('fill', '#ba1a1a');
+                delBtn.setAttribute('class', 'line-delete-btn');
+                delBtn.setAttribute('title', 'Delete Connection');
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteConnection(conn.id);
+                };
+                connectionsGroup.appendChild(delBtn);
+            });
+        }
+
+        // Connecting Mode System
+        function toggleConnectingMode() {
+            isConnectingMode = !isConnectingMode;
+            connectSourceCardId = null;
+
+            const banner = document.getElementById('connecting-mode-banner');
+            const topBtn = document.getElementById('toggle-connect-btn');
+            const sideBtn = document.getElementById('side-connect-btn');
+
+            if (isConnectingMode) {
+                banner.classList.remove('hidden');
+                banner.classList.add('flex');
+                canvasSurface.classList.add('connecting-mode');
+                topBtn.classList.add('bg-primary', 'text-white');
+                sideBtn.classList.add('active');
+            } else {
+                banner.classList.add('hidden');
+                banner.classList.remove('flex');
+                canvasSurface.classList.remove('connecting-mode');
+                topBtn.classList.remove('bg-primary', 'text-white');
+                sideBtn.classList.remove('active');
+                document.querySelectorAll('.canvas-card').forEach(c => c.classList.remove('connect-target'));
+            }
+        }
+
+        function handleCardConnectionClick(cardId) {
+            if (!connectSourceCardId) {
+                // First card selected
+                connectSourceCardId = cardId;
+                const cardEl = document.getElementById(`card-${cardId}`);
+                if (cardEl) cardEl.classList.add('connect-target');
+            } else {
+                if (connectSourceCardId === cardId) {
+                    // Deselect
+                    document.getElementById(`card-${cardId}`).classList.remove('connect-target');
+                    connectSourceCardId = null;
+                    return;
+                }
+
+                // Second card selected -> Open connection modal
+                document.getElementById('conn-from-id').value = connectSourceCardId;
+                document.getElementById('conn-to-id').value = cardId;
+                document.getElementById('conn-label').value = '';
+                document.getElementById('connection-modal').classList.add('active');
+
+                // Cleanup target classes
+                document.querySelectorAll('.canvas-card').forEach(c => c.classList.remove('connect-target'));
+                toggleConnectingMode();
+            }
+        }
+
+        function selectLineStyle(style, btn) {
+            document.getElementById('conn-style').value = style;
+            document.querySelectorAll('.line-style-btn').forEach(b => {
+                b.classList.remove('border-primary', 'bg-primary/10', 'text-primary');
+                b.classList.add('border-outline-variant', 'text-on-surface-variant');
+            });
+            btn.classList.add('border-primary', 'bg-primary/10', 'text-primary');
+            btn.classList.remove('border-outline-variant', 'text-on-surface-variant');
+        }
+
+        function closeConnectionModal() {
+            document.getElementById('connection-modal').classList.remove('active');
+        }
+
+        document.getElementById('connection-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const from_id = document.getElementById('conn-from-id').value;
+            const to_id = document.getElementById('conn-to-id').value;
+            const style = document.getElementById('conn-style').value;
+            const label = document.getElementById('conn-label').value.trim();
+
+            try {
+                const res = await fetch(`/api/boards/${boardId}/connections`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ from_id, to_id, style, label })
+                });
+                if (res.ok) {
+                    const newConn = await res.json();
+                    connections.push(newConn);
+                    renderAllConnections();
+                    closeConnectionModal();
+                } else {
+                    alert('Failed to connect cards.');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        async function deleteConnection(connId) {
+            if (!confirm('Remove this connection line?')) return;
+            try {
+                const res = await fetch(`/api/boards/${boardId}/connections/${connId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    connections = connections.filter(c => c.id !== connId);
+                    renderAllConnections();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Spawning Elements on Canvas
+        async function spawnNoteCard() {
+            const centerX = Math.round((-panX + window.innerWidth / 2) / scale - 130);
+            const centerY = Math.round((-panY + window.innerHeight / 2) / scale - 90);
+
+            try {
+                const res = await fetch(`/api/boards/${boardId}/elements`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'note',
+                        x: centerX,
+                        y: centerY,
+                        width: 260,
+                        height: 180,
+                        color: NOTE_COLORS.yellow,
+                        content: JSON.stringify({ title: 'New Note', text: '' })
+                    })
+                });
+                if (res.ok) {
+                    const newEl = await res.json();
+                    elements.push(newEl);
+                    renderElementCard(newEl);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function spawnTodoCard() {
+            const centerX = Math.round((-panX + window.innerWidth / 2) / scale - 130);
+            const centerY = Math.round((-panY + window.innerHeight / 2) / scale - 90);
+
+            try {
+                const res = await fetch(`/api/boards/${boardId}/elements`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'todo',
+                        x: centerX,
+                        y: centerY,
+                        width: 280,
+                        height: 200,
+                        color: '#ffffff',
+                        content: JSON.stringify({ title: 'Checklist', items: [{ text: 'First task', done: false }] })
+                    })
+                });
+                if (res.ok) {
+                    const newEl = await res.json();
+                    elements.push(newEl);
+                    renderElementCard(newEl);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function spawnLinkCard() {
+            const centerX = Math.round((-panX + window.innerWidth / 2) / scale - 130);
+            const centerY = Math.round((-panY + window.innerHeight / 2) / scale - 90);
+
+            try {
+                const res = await fetch(`/api/boards/${boardId}/elements`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'link',
+                        x: centerX,
+                        y: centerY,
+                        width: 260,
+                        height: 150,
+                        color: '#ffffff',
+                        content: JSON.stringify({ title: 'Creative Inspiration', url: 'https://milanote.com' })
+                    })
+                });
+                if (res.ok) {
+                    const newEl = await res.json();
+                    elements.push(newEl);
+                    renderElementCard(newEl);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // File Upload System
+        function triggerFileUpload(typeFilter = '') {
+            const fileInput = document.getElementById('hidden-file-input');
+            if (typeFilter === 'image') fileInput.accept = 'image/*';
+            else if (typeFilter === 'document') fileInput.accept = '.pdf,.doc,.docx,.txt';
+            else fileInput.accept = 'image/*,.pdf,.doc,.docx,.txt';
+            fileInput.click();
+        }
+
+        async function handleFileInput(input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            await uploadFileToCanvas(file);
+            input.value = '';
+        }
+
+        async function uploadFileToCanvas(file, dropX = null, dropY = null) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!uploadRes.ok) {
+                    alert('File upload failed.');
+                    return;
+                }
+
+                const fileInfo = await uploadRes.json();
+                const isImage = file.type.startsWith('image/');
+                const isDoc = file.type.includes('pdf') || file.name.endsWith('.pdf') || !isImage;
+
+                const posX = dropX !== null ? dropX : Math.round((-panX + window.innerWidth / 2) / scale - 130);
+                const posY = dropY !== null ? dropY : Math.round((-panY + window.innerHeight / 2) / scale - 90);
+
+                const elementRes = await fetch(`/api/boards/${boardId}/elements`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: isImage ? 'image' : 'document',
+                        x: posX,
+                        y: posY,
+                        width: isImage ? 300 : 280,
+                        height: isImage ? 240 : 160,
+                        color: '#ffffff',
+                        file_url: fileInfo.file_url,
+                        file_name: fileInfo.file_name,
+                        file_type: fileInfo.file_type,
+                        file_size: fileInfo.file_size,
+                        content: isImage ? fileInfo.file_name : ''
+                    })
+                });
+
+                if (elementRes.ok) {
+                    const newEl = await elementRes.json();
+                    elements.push(newEl);
+                    renderElementCard(newEl);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Upload error.');
+            }
+        }
+
+        // Drag & Drop Files directly onto Canvas
+        window.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            document.getElementById('drop-zone-overlay').classList.remove('hidden');
+            document.getElementById('drop-zone-overlay').classList.add('flex');
+        });
+
+        window.addEventListener('dragleave', (e) => {
+            if (e.clientX <= 0 || e.clientY <= 0) {
+                document.getElementById('drop-zone-overlay').classList.add('hidden');
+                document.getElementById('drop-zone-overlay').classList.remove('flex');
+            }
+        });
+
+        window.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            document.getElementById('drop-zone-overlay').classList.add('hidden');
+            document.getElementById('drop-zone-overlay').classList.remove('flex');
+
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                const dropX = Math.round((-panX + e.clientX) / scale - 130);
+                const dropY = Math.round((-panY + e.clientY) / scale - 90);
+                for (let i = 0; i < e.dataTransfer.files.length; i++) {
+                    await uploadFileToCanvas(e.dataTransfer.files[i], dropX + (i * 30), dropY + (i * 30));
+                }
+            }
+        });
+
+        // Content Updates
+        async function updateNoteContent(id, field, value) {
+            const el = elements.find(e => e.id === id);
+            if (!el) return;
+            const contentObj = parseJSON(el.content, { title: 'Untitled Note', text: '' });
+            contentObj[field] = value;
+            el.content = JSON.stringify(contentObj);
+            updateElementDirect(id, { content: el.content });
+        }
+
+        async function cycleCardColor(id) {
+            const el = elements.find(e => e.id === id);
+            if (!el) return;
+            const colorsList = Object.values(NOTE_COLORS);
+            const curIdx = colorsList.indexOf(el.color || NOTE_COLORS.yellow);
+            const nextColor = colorsList[(curIdx + 1) % colorsList.length];
+            el.color = nextColor;
+            const cardEl = document.getElementById(`card-${id}`);
+            if (cardEl) cardEl.style.backgroundColor = nextColor;
+            updateElementDirect(id, { color: nextColor });
+        }
+
+        async function updateTodoTitle(id, title) {
+            const el = elements.find(e => e.id === id);
+            if (!el) return;
+            const todoObj = parseJSON(el.content, { title: 'Checklist', items: [] });
+            todoObj.title = title;
+            el.content = JSON.stringify(todoObj);
+            updateElementDirect(id, { content: el.content });
+        }
+
+        async function toggleTodoItem(id, itemIdx) {
+            const el = elements.find(e => e.id === id);
+            if (!el) return;
+            const todoObj = parseJSON(el.content, { title: 'Checklist', items: [] });
+            if (todoObj.items[itemIdx]) {
+                todoObj.items[itemIdx].done = !todoObj.items[itemIdx].done;
+                el.content = JSON.stringify(todoObj);
+                renderElementCard(el);
+                updateElementDirect(id, { content: el.content });
+            }
+        }
+
+        async function handleNewTodoKey(id, e) {
+            if (e.key === 'Enter' && e.target.value.trim()) {
+                const text = e.target.value.trim();
+                e.target.value = '';
+                const el = elements.find(item => item.id === id);
+                if (!el) return;
+                const todoObj = parseJSON(el.content, { title: 'Checklist', items: [] });
+                todoObj.items.push({ text, done: false });
+                el.content = JSON.stringify(todoObj);
+                renderElementCard(el);
+                updateElementDirect(id, { content: el.content });
+            }
+        }
+
+        async function removeTodoItem(id, itemIdx) {
+            const el = elements.find(e => e.id === id);
+            if (!el) return;
+            const todoObj = parseJSON(el.content, { title: 'Checklist', items: [] });
+            todoObj.items.splice(itemIdx, 1);
+            el.content = JSON.stringify(todoObj);
+            renderElementCard(el);
+            updateElementDirect(id, { content: el.content });
+        }
+
+        async function updateLinkContent(id, field, value) {
+            const el = elements.find(e => e.id === id);
+            if (!el) return;
+            const linkObj = parseJSON(el.content, { title: 'Link', url: 'https://' });
+            linkObj[field] = value;
+            el.content = JSON.stringify(linkObj);
+            updateElementDirect(id, { content: el.content });
+        }
+
+        async function updateElementDirect(id, updates) {
+            try {
+                await fetch(`/api/boards/${boardId}/elements/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function deleteElement(id) {
+            if (!confirm('Delete this card?')) return;
+            try {
+                const res = await fetch(`/api/boards/${boardId}/elements/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    elements = elements.filter(el => el.id !== id);
+                    connections = connections.filter(c => c.from_id !== id && c.to_id !== id);
+                    const cardEl = document.getElementById(`card-${id}`);
+                    if (cardEl) cardEl.remove();
+                    renderAllConnections();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Lightbox
+        function openLightbox(url, caption) {
+            document.getElementById('lightbox-img').src = url;
+            document.getElementById('lightbox-caption').textContent = caption;
+            document.getElementById('image-lightbox-modal').classList.add('active');
+        }
+
+        // Canvas Background Pan Setup
+        canvasSurface.addEventListener('mousedown', (e) => {
+            if (e.target !== canvasSurface && e.target !== document.getElementById('svg-connections')) return;
+            if (isConnectingMode) {
+                toggleConnectingMode();
+                return;
+            }
+            isPanning = true;
+            startPanX = e.clientX - panX;
+            startPanY = e.clientY - panY;
+            canvasSurface.classList.add('panning');
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            panX = e.clientX - startPanX;
+            panY = e.clientY - startPanY;
+            updateCanvasTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isPanning = false;
+            canvasSurface.classList.remove('panning');
+        });
+
+        // Wheel Zoom Support (Ctrl+Wheel or Trackpad Pinch)
+        window.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.05 : 0.05;
+                zoomCanvas(delta);
+            }
+        }, { passive: false });
+
+        function parseJSON(str, fallback) {
+            try { return JSON.parse(str); } catch (e) { return fallback; }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Start initial load
+        updateCanvasTransform();
+        fetchBoardData();
+    </script>
+</body>
+
+</html>

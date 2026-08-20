@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Ola_Note - My Boards</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#a04100",
+                        "primary-container": "#ff6b00",
+                        "on-primary-container": "#572000",
+                        "surface": "#fbf9f9",
+                        "on-surface": "#1b1c1c",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#e3e2e2",
+                        "on-surface-variant": "#5a4136",
+                        "outline": "#8e7164",
+                        "outline-variant": "#e2bfb0",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff"
+                    },
+                    "fontFamily": { "inter": ["Inter", "sans-serif"] }
+                }
+            }
+        }
+    </script>
+    <style>
+        .milanote-grid {
+            background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px),
+                linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .card-shadow {
+            box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.05), 0px 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .board-card {
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .board-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0px 12px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .modal {
+            display: none;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .color-option.active {
+            box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #a04100;
+        }
+
+        .icon-option.active {
+            background-color: #ffdbcc;
+            color: #a04100;
+            border-color: #a04100;
+        }
+    </style>
+</head>
+
+<body class="bg-surface font-inter text-on-surface min-h-screen pb-24">
+    <!-- TopAppBar -->
+    <header class="w-full top-0 sticky bg-surface/80 backdrop-blur-md z-40 border-b border-outline-variant">
+        <div class="flex items-center justify-between px-4 h-16 w-full max-w-7xl mx-auto">
+            <div class="flex items-center gap-6">
+                <a href="home.html" class="font-bold text-2xl text-primary flex items-center gap-2 hover:opacity-85 transition-opacity">
+                    <span class="material-symbols-outlined">edit_square</span> Ola_Note
+                </a>
+                <nav class="hidden md:flex items-center gap-1">
+                    <a href="home.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-lg">view_kanban</span> Kanban
+                    </a>
+                    <a href="boards.html" class="px-3 py-1.5 rounded-lg text-sm font-bold text-primary bg-primary/10 transition-colors flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-lg">dashboard_customize</span> My Boards
+                    </a>
+                    <a href="calendar.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-lg">calendar_month</span> Calendar
+                    </a>
+                </nav>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="user-greeting" class="text-sm font-semibold text-on-surface-variant hidden md:block"></span>
+                <button onclick="logout()" class="text-sm font-semibold text-primary hover:underline">Log Out</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="milanote-grid min-h-[calc(100vh-64px)] px-4 sm:px-6 py-8 relative">
+        <div class="max-w-7xl mx-auto flex flex-col gap-8">
+
+            <!-- Hero Section -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-container-lowest p-6 sm:p-8 rounded-3xl card-shadow border border-outline-variant/40">
+                <div>
+                    <div class="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider mb-2">
+                        <span class="material-symbols-outlined text-base">auto_awesome</span> Visual Workspaces
+                    </div>
+                    <h1 class="text-2xl sm:text-4xl font-extrabold text-on-surface tracking-tight">My Creative Boards</h1>
+                    <p class="text-sm text-on-surface-variant mt-1.5 max-w-xl">
+                        Design moodboards, project architectures, and brainstorming canvases with draggable cards, PDFs, images, and connected lines.
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="openNewBoardModal()"
+                        class="flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm bg-primary text-on-primary hover:opacity-90 active:scale-95 transition-all shadow-md">
+                        <span class="material-symbols-outlined text-xl">add</span>
+                        <span>New Board</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search & Filters Bar -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="relative w-full sm:w-80">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg">search</span>
+                    <input type="text" id="board-search" oninput="filterBoards()"
+                        placeholder="Search your boards by title or topic..."
+                        class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-outline-variant/60 bg-surface-container-lowest text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors">
+                </div>
+                <div id="boards-count-badge" class="text-xs font-bold text-on-surface-variant uppercase tracking-wider self-start sm:self-auto">
+                    Loading boards...
+                </div>
+            </div>
+
+            <!-- Boards Grid -->
+            <div id="boards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Boards injected dynamically -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden flex-col items-center justify-center text-center py-16 px-4 bg-surface-container-lowest rounded-3xl card-shadow border border-outline-variant/40">
+                <div class="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+                    <span class="material-symbols-outlined text-3xl">dashboard_customize</span>
+                </div>
+                <h3 class="text-xl font-bold text-on-surface mb-1">No Boards Created Yet</h3>
+                <p class="text-sm text-on-surface-variant max-w-md mb-6">
+                    Create your first visual workspace to start dropping notes, documents, images, and drawing connected diagrams like Milanote.
+                </p>
+                <button onclick="openNewBoardModal()"
+                    class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-primary text-on-primary hover:opacity-90 active:scale-95 transition-all shadow-sm">
+                    <span class="material-symbols-outlined text-lg">add</span>
+                    <span>Create Your First Board</span>
+                </button>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Create / Edit Board Modal -->
+    <div id="board-modal"
+        class="modal fixed inset-0 bg-on-surface/50 backdrop-blur-sm z-50 items-center justify-center p-4">
+        <div
+            class="bg-surface-container-lowest rounded-3xl p-6 sm:p-8 w-full max-w-lg card-shadow border border-outline-variant relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeBoardModal()" class="absolute top-5 right-5 text-on-surface-variant hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-2xl">close</span>
+            </button>
+            
+            <div class="flex items-center gap-2.5 mb-1.5">
+                <div id="modal-board-icon-preview" class="p-2 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">palette</span>
+                </div>
+                <h2 id="board-modal-title" class="text-2xl font-bold text-on-surface">Create New Board</h2>
+            </div>
+            <p class="text-xs text-on-surface-variant mb-6">Configure your topic board's title, icon, and aesthetic theme</p>
+
+            <form id="board-form" class="flex flex-col gap-5">
+                <input type="hidden" id="board-id">
+
+                <!-- Title -->
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1.5">Board Title</label>
+                    <input type="text" id="board-title" required
+                        placeholder="e.g. Brand Identity 2026, Product Architecture, Trip to Japan"
+                        class="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors">
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1.5">Topic / Description (Optional)</label>
+                    <textarea id="board-desc" rows="2.5"
+                        placeholder="What is this board for? Key objectives, topics, or notes..."
+                        class="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"></textarea>
+                </div>
+
+                <!-- Icon Picker -->
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant uppercase mb-2">Choose Board Icon</label>
+                    <div class="grid grid-cols-4 sm:grid-cols-8 gap-2" id="icon-picker-container">
+                        <!-- Injected icons -->
+                    </div>
+                    <input type="hidden" id="board-icon" value="palette">
+                </div>
+
+                <!-- Color Theme -->
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant uppercase mb-2">Choose Color Accent</label>
+                    <div class="flex items-center gap-3" id="color-picker-container">
+                        <!-- Injected color dots -->
+                    </div>
+                    <input type="hidden" id="board-color" value="#a04100">
+                </div>
+
+                <!-- Actions -->
+                <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-outline-variant/30">
+                    <button type="button" onclick="closeBoardModal()"
+                        class="px-4 py-2.5 rounded-xl font-semibold text-xs text-on-surface-variant hover:bg-surface-variant transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="px-5 py-2.5 rounded-xl font-bold text-xs bg-primary text-on-primary hover:opacity-90 active:scale-95 transition-all shadow-sm">
+                        Save Board
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- BottomNavBar for Mobile -->
+    <nav
+        class="md:hidden fixed bottom-0 left-0 w-full z-40 flex justify-around items-center px-4 py-2 bg-surface border-t border-outline-variant shadow-sm">
+        <a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="home.html">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span class="text-[10px] font-bold uppercase mt-1">Board</span>
+        </a>
+        <a class="flex flex-col items-center justify-center text-primary" href="boards.html">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard_customize</span>
+            <span class="text-[10px] font-bold uppercase mt-1">My Boards</span>
+        </a>
+        <a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="calendar.html">
+            <span class="material-symbols-outlined">calendar_month</span>
+            <span class="text-[10px] font-bold uppercase mt-1">Calendar</span>
+        </a>
+    </nav>
+
+    <script>
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) {
+            window.location.href = 'login.html';
+        } else {
+            document.getElementById('user-greeting').textContent = 'Hello, ' + user.name;
+        }
+
+        let boards = [];
+
+        const ICONS = ['palette', 'rocket_launch', 'lightbulb', 'business_center', 'menu_book', 'flag', 'extension', 'bolt'];
+        const COLORS = ['#a04100', '#0062a1', '#2e7d32', '#6a1b9a', '#c2185b', '#e65100', '#37474f'];
+
+        function initPickers() {
+            // Render Icon Picker
+            const iconContainer = document.getElementById('icon-picker-container');
+            iconContainer.innerHTML = '';
+            ICONS.forEach((icon, index) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'icon-option p-2.5 rounded-xl border border-outline-variant/60 flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary transition-all ' + (index === 0 ? 'active' : '');
+                btn.innerHTML = '<span class="material-symbols-outlined text-xl">' + icon + '</span>';
+                btn.onclick = () => {
+                    document.getElementById('board-icon').value = icon;
+                    document.getElementById('modal-board-icon-preview').innerHTML = '<span class="material-symbols-outlined text-2xl">' + icon + '</span>';
+                    document.querySelectorAll('.icon-option').forEach(el => el.classList.remove('active'));
+                    btn.classList.add('active');
+                };
+                iconContainer.appendChild(btn);
+            });
+
+            // Render Color Picker
+            const colorContainer = document.getElementById('color-picker-container');
+            colorContainer.innerHTML = '';
+            COLORS.forEach((color, index) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'color-option w-7 h-7 rounded-full transition-all ' + (index === 0 ? 'active' : '');
+                btn.style.backgroundColor = color;
+                btn.onclick = () => {
+                    document.getElementById('board-color').value = color;
+                    document.getElementById('modal-board-icon-preview').style.color = color;
+                    document.querySelectorAll('.color-option').forEach(el => el.classList.remove('active'));
+                    btn.classList.add('active');
+                };
+                colorContainer.appendChild(btn);
+            });
+        }
+
+        async function fetchBoards() {
+            try {
+                const res = await fetch('/api/boards?userId=' + user.id);
+                boards = await res.json();
+                renderBoards(boards);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function filterBoards() {
+            const query = document.getElementById('board-search').value.toLowerCase().trim();
+            const filtered = boards.filter(b => 
+                b.title.toLowerCase().includes(query) || 
+                (b.description && b.description.toLowerCase().includes(query))
+            );
+            renderBoards(filtered);
+        }
+
+        function renderBoards(items) {
+            const grid = document.getElementById('boards-grid');
+            const emptyState = document.getElementById('empty-state');
+            const countBadge = document.getElementById('boards-count-badge');
+
+            countBadge.textContent = items.length + ' Board' + (items.length === 1 ? '' : 's');
+
+            if (!items || items.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            emptyState.classList.remove('flex');
+            grid.innerHTML = '';
+
+            items.forEach(board => {
+                const card = document.createElement('div');
+                card.className = "board-card bg-surface-container-lowest rounded-3xl p-6 card-shadow border border-outline-variant/50 flex flex-col justify-between cursor-pointer relative overflow-hidden group";
+                
+                // Color bar top
+                const topBar = document.createElement('div');
+                topBar.className = "absolute top-0 left-0 right-0 h-1.5";
+                topBar.style.backgroundColor = board.color || '#a04100';
+                card.appendChild(topBar);
+
+                const dateCreated = new Date(board.created_at || Date.now()).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+
+                card.innerHTML += `
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm" 
+                                style="background-color: ${board.color}15; color: ${board.color};">
+                                <span class="material-symbols-outlined text-2xl">${board.icon || 'dashboard'}</span>
+                            </div>
+                            <div class="flex items-center gap-1" onclick="event.stopPropagation()">
+                                <button onclick="openEditBoardModal(${board.id})" title="Edit board" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <button onclick="deleteBoard(${board.id})" title="Delete board" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-red-50 hover:text-error transition-colors">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <h3 class="font-extrabold text-xl text-on-surface mb-1.5 group-hover:text-primary transition-colors leading-tight">${escapeHtml(board.title)}</h3>
+                        <p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed mb-4">${escapeHtml(board.description || 'No description provided.')}</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-outline-variant/30 flex items-center justify-between text-xs text-on-surface-variant font-medium">
+                        <div class="flex items-center gap-3">
+                            <span class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">widgets</span>
+                                <b>${board.element_count || 0}</b> cards
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">linear_scale</span>
+                                <b>${board.connection_count || 0}</b> links
+                            </span>
+                        </div>
+                        <span class="text-[11px] opacity-70">${dateCreated}</span>
+                    </div>
+                `;
+
+                card.onclick = () => {
+                    window.location.href = `board.html?id=${board.id}`;
+                };
+
+                grid.appendChild(card);
+            });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Board Modal Handlers
+        const boardModal = document.getElementById('board-modal');
+        const boardForm = document.getElementById('board-form');
+
+        function openNewBoardModal() {
+            boardForm.reset();
+            document.getElementById('board-id').value = '';
+            document.getElementById('board-modal-title').textContent = 'Create New Board';
+            document.getElementById('board-icon').value = 'palette';
+            document.getElementById('board-color').value = '#a04100';
+            initPickers();
+            boardModal.classList.add('active');
+            setTimeout(() => document.getElementById('board-title').focus(), 100);
+        }
+
+        function openEditBoardModal(boardId) {
+            const board = boards.find(b => b.id === boardId);
+            if (!board) return;
+            document.getElementById('board-id').value = board.id;
+            document.getElementById('board-title').value = board.title;
+            document.getElementById('board-desc').value = board.description || '';
+            document.getElementById('board-icon').value = board.icon || 'palette';
+            document.getElementById('board-color').value = board.color || '#a04100';
+            document.getElementById('board-modal-title').textContent = 'Edit Board Details';
+
+            initPickers();
+            
+            // Activate selected icon & color
+            document.querySelectorAll('.icon-option').forEach(btn => {
+                if (btn.textContent.includes(board.icon)) btn.classList.add('active');
+            });
+            document.querySelectorAll('.color-option').forEach(btn => {
+                if (btn.style.backgroundColor === board.color) btn.classList.add('active');
+            });
+
+            boardModal.classList.add('active');
+        }
+
+        function closeBoardModal() {
+            boardModal.classList.remove('active');
+        }
+
+        boardModal.addEventListener('click', (e) => {
+            if (e.target === boardModal) closeBoardModal();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && boardModal.classList.contains('active')) closeBoardModal();
+        });
+
+        boardForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('board-id').value;
+            const payload = {
+                userId: user.id,
+                title: document.getElementById('board-title').value,
+                description: document.getElementById('board-desc').value,
+                icon: document.getElementById('board-icon').value,
+                color: document.getElementById('board-color').value
+            };
+
+            try {
+                let res;
+                if (id) {
+                    res = await fetch('/api/boards/' + id, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    res = await fetch('/api/boards', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+
+                if (res.ok) {
+                    closeBoardModal();
+                    if (!id) {
+                        const newBoard = await res.json();
+                        window.location.href = `board.html?id=${newBoard.id}`;
+                    } else {
+                        fetchBoards();
+                    }
+                } else {
+                    const data = await res.json();
+                    alert('Error: ' + (data.error || 'Failed to save board.'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Something went wrong.');
+            }
+        });
+
+        async function deleteBoard(boardId) {
+            if (!confirm('Are you sure you want to delete this board and all its canvas items?')) return;
+            try {
+                const res = await fetch('/api/boards/' + boardId + '?userId=' + user.id, { method: 'DELETE' });
+                if (res.ok) {
+                    fetchBoards();
+                } else {
+                    alert('Failed to delete board.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Something went wrong.');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        initPickers();
+        if (user) {
+            fetchBoards();
+        }
+    </script>
+</body>
+
+</html>

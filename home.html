@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html class="light" lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Ola_Note - Board</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script id="tailwind-config">
         tailwind.config = {
@@ -35,25 +37,60 @@
     <style>
         .milanote-grid {
             background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px),
-                              linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+                linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
             background-size: 24px 24px;
         }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .card-shadow { box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05); }
-        .kanban-column { min-height: 200px; }
-        .task-card.sortable-ghost { opacity: 0.4; }
-        .task-card.sortable-drag { cursor: grabbing !important; }
-        .modal { display: none; }
-        .modal.active { display: flex; }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .card-shadow {
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .kanban-column {
+            min-height: 200px;
+        }
+
+        .task-card.sortable-ghost {
+            opacity: 0.4;
+        }
+
+        .task-card.sortable-drag {
+            cursor: grabbing !important;
+        }
+
+        .modal {
+            display: none;
+        }
+
+        .modal.active {
+            display: flex;
+        }
     </style>
 </head>
+
 <body class="bg-surface font-inter text-on-surface min-h-screen pb-24">
     <!-- TopAppBar -->
     <header class="w-full top-0 sticky bg-surface/80 backdrop-blur-md z-40 border-b border-outline-variant">
         <div class="flex items-center justify-between px-4 h-16 w-full max-w-7xl mx-auto">
-            <h1 class="font-bold text-2xl text-primary flex items-center gap-2">
-                <span class="material-symbols-outlined">edit_square</span> Ola_Note
-            </h1>
+            <div class="flex items-center gap-6">
+                <a href="home.html" class="font-bold text-2xl text-primary flex items-center gap-2 hover:opacity-85 transition-opacity">
+                    <span class="material-symbols-outlined">edit_square</span> Ola_Note
+                </a>
+                <nav class="hidden md:flex items-center gap-1">
+                    <a href="home.html" class="px-3 py-1.5 rounded-lg text-sm font-bold text-primary bg-primary/10 transition-colors flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-lg">view_kanban</span> Kanban
+                    </a>
+                    <a href="boards.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-lg">dashboard_customize</span> My Boards
+                    </a>
+                    <a href="calendar.html" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-lg">calendar_month</span> Calendar
+                    </a>
+                </nav>
+            </div>
             <div class="flex items-center gap-4">
                 <span id="user-greeting" class="text-sm font-semibold text-on-surface-variant hidden md:block"></span>
                 <button onclick="logout()" class="text-sm font-semibold text-primary hover:underline">Log Out</button>
@@ -64,7 +101,7 @@
     <!-- Board Canvas -->
     <main class="milanote-grid min-h-[calc(100vh-64px)] px-4 py-8 relative">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto items-start">
-            
+
             <!-- To Do Column -->
             <div class="bg-surface-variant/30 rounded-xl p-4 flex flex-col gap-4">
                 <div class="flex items-center justify-between">
@@ -84,7 +121,8 @@
                     <h3 class="font-semibold text-lg flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full bg-primary-container"></span> In Progress
                     </h3>
-                    <span id="count-in_progress" class="bg-surface-variant text-xs px-2 py-1 rounded-full font-bold">0</span>
+                    <span id="count-in_progress"
+                        class="bg-surface-variant text-xs px-2 py-1 rounded-full font-bold">0</span>
                 </div>
                 <div id="col-in_progress" data-status="in_progress" class="kanban-column flex flex-col gap-3">
                 </div>
@@ -106,52 +144,107 @@
     </main>
 
     <!-- Floating Action Button (FAB) -->
-    <button onclick="openModal()" class="fixed bottom-20 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-50">
+    <button onclick="openModal()"
+        class="fixed bottom-20 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-50">
         <span class="material-symbols-outlined font-bold text-2xl">add</span>
     </button>
 
     <!-- Add/Edit Task Modal -->
-    <div id="task-modal" class="modal fixed inset-0 bg-on-surface/50 backdrop-blur-sm z-50 items-center justify-center p-4">
-        <div class="bg-surface-container-lowest rounded-xl p-6 w-full max-w-md card-shadow border border-outline-variant relative">
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-on-surface-variant hover:text-primary">
-                <span class="material-symbols-outlined">close</span>
+    <div id="task-modal"
+        class="modal fixed inset-0 bg-on-surface/50 backdrop-blur-sm z-50 items-center justify-center p-4">
+        <div
+            class="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg card-shadow border border-outline-variant relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-on-surface-variant hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-2xl">close</span>
             </button>
-            <h2 id="modal-title" class="text-2xl font-bold mb-4">Add New Task</h2>
+            <h2 id="modal-title" class="text-2xl font-bold mb-1">Add New Item</h2>
+            <p class="text-xs text-on-surface-variant mb-4">Add tasks, birthdays, events, or important deadlines to your workspace</p>
+
             <form id="task-form" class="flex flex-col gap-4">
                 <input type="hidden" id="task-id">
+                
+                <!-- Category Selector Pills -->
+                <div>
+                    <label class="block text-xs font-bold text-on-surface-variant uppercase mb-2">Category & Type</label>
+                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2" id="home-category-pills">
+                        <button type="button" onclick="selectHomeCategory('Birthday', this)" class="category-pill flex flex-col items-center gap-1 p-2 rounded-xl bg-pink-50 border-pink-200 text-pink-700 text-xs hover:scale-105 transition-all">
+                            <span class="text-base leading-none">🎂</span>
+                            <span class="font-bold">Birthday</span>
+                        </button>
+                        <button type="button" onclick="selectHomeCategory('Important', this)" class="category-pill flex flex-col items-center gap-1 p-2 rounded-xl bg-amber-50 border-amber-200 text-amber-800 text-xs hover:scale-105 transition-all">
+                            <span class="text-base leading-none">⭐</span>
+                            <span class="font-bold">Important</span>
+                        </button>
+                        <button type="button" onclick="selectHomeCategory('Event', this)" class="category-pill flex flex-col items-center gap-1 p-2 rounded-xl bg-indigo-50 border-indigo-200 text-indigo-700 text-xs hover:scale-105 transition-all">
+                            <span class="text-base leading-none">📅</span>
+                            <span class="font-bold">Event</span>
+                        </button>
+                        <button type="button" onclick="selectHomeCategory('Reminder', this)" class="category-pill flex flex-col items-center gap-1 p-2 rounded-xl bg-sky-50 border-sky-200 text-sky-700 text-xs hover:scale-105 transition-all">
+                            <span class="text-base leading-none">⏰</span>
+                            <span class="font-bold">Reminder</span>
+                        </button>
+                        <button type="button" onclick="selectHomeCategory('Work', this)" class="category-pill active flex flex-col items-center gap-1 p-2 rounded-xl bg-blue-50 border-blue-200 text-blue-800 text-xs hover:scale-105 transition-all">
+                            <span class="text-base leading-none">💼</span>
+                            <span class="font-bold">Work</span>
+                        </button>
+                        <button type="button" onclick="selectHomeCategory('Personal', this)" class="category-pill flex flex-col items-center gap-1 p-2 rounded-xl bg-emerald-50 border-emerald-200 text-emerald-800 text-xs hover:scale-105 transition-all">
+                            <span class="text-base leading-none">🌿</span>
+                            <span class="font-bold">Personal</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="task-category" value="Work">
+                </div>
+
                 <div>
                     <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Title</label>
-                    <input type="text" id="task-title" required class="w-full border border-outline-variant rounded-lg px-3 py-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors">
+                    <input type="text" id="task-title" required
+                        placeholder="e.g. Alice's Birthday 🎂, Review Design, Quarterly Goals"
+                        class="w-full border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors">
                 </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Due Date / Event Date</label>
+                        <input type="date" id="task-date"
+                            class="w-full border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Custom Tag (Optional)</label>
+                        <input type="text" id="task-custom-tag" placeholder="e.g. Design, Urgent, Family"
+                            class="w-full border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors">
+                    </div>
+                </div>
+
                 <div>
-                    <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Description</label>
-                    <textarea id="task-desc" rows="3" class="w-full border border-outline-variant rounded-lg px-3 py-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"></textarea>
+                    <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Description / Notes</label>
+                    <textarea id="task-desc" rows="2.5"
+                        placeholder="Notes, location, gift ideas, subtasks..."
+                        class="w-full border border-outline-variant rounded-xl px-3.5 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"></textarea>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Category / Tag</label>
-                        <input type="text" id="task-category" placeholder="e.g. Work, Design" class="w-full border border-outline-variant rounded-lg px-3 py-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-on-surface-variant uppercase mb-1">Due Date</label>
-                        <input type="date" id="task-date" class="w-full border border-outline-variant rounded-lg px-3 py-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors">
-                    </div>
-                </div>
-                <div class="flex justify-end gap-3 mt-4">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg font-semibold text-on-surface-variant hover:bg-surface-variant transition-colors">Cancel</button>
-                    <button type="submit" class="px-4 py-2 rounded-lg font-semibold bg-primary text-on-primary hover:opacity-90 transition-opacity shadow-sm">Save Task</button>
+
+                <div class="flex justify-end gap-2.5 mt-2 pt-2 border-t border-outline-variant/30">
+                    <button type="button" onclick="closeModal()"
+                        class="px-4 py-2.5 rounded-xl font-semibold text-xs text-on-surface-variant hover:bg-surface-variant transition-colors">Cancel</button>
+                    <button type="submit"
+                        class="px-5 py-2.5 rounded-xl font-bold text-xs bg-primary text-on-primary hover:opacity-90 active:scale-95 transition-all shadow-sm">Save Item</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- BottomNavBar (Optional, kept for consistency) -->
-    <nav class="fixed bottom-0 left-0 w-full z-40 flex justify-around items-center px-4 py-2 bg-surface border-t border-outline-variant shadow-sm">
+    <!-- BottomNavBar (Mobile) -->
+    <nav
+        class="md:hidden fixed bottom-0 left-0 w-full z-40 flex justify-around items-center px-4 py-2 bg-surface border-t border-outline-variant shadow-sm">
         <a class="flex flex-col items-center justify-center text-primary" href="home.html">
             <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
             <span class="text-[10px] font-bold uppercase mt-1">Board</span>
         </a>
-        <a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="calendar.html">
+        <a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="boards.html">
+            <span class="material-symbols-outlined">dashboard_customize</span>
+            <span class="text-[10px] font-bold uppercase mt-1">My Boards</span>
+        </a>
+        <a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors"
+            href="calendar.html">
             <span class="material-symbols-outlined">calendar_month</span>
             <span class="text-[10px] font-bold uppercase mt-1">Calendar</span>
         </a>
@@ -177,19 +270,39 @@
             }
         }
 
-        function getCategoryColor(category) {
-            if (!category) return 'bg-surface-variant text-on-surface-variant';
+        function getCategoryInfo(category) {
+            if (!category) {
+                return {
+                    colorClass: 'bg-surface-variant text-on-surface-variant border-outline-variant/30',
+                    emoji: '📌'
+                };
+            }
             const cat = category.toLowerCase();
-            if (cat.includes('work') || cat.includes('design')) return 'bg-blue-100 text-blue-800';
-            if (cat.includes('urgent')) return 'bg-red-100 text-red-800';
-            if (cat.includes('personal')) return 'bg-green-100 text-green-800';
-            return 'bg-purple-100 text-purple-800';
+            if (cat.includes('birth') || cat.includes('bday') || cat.includes('b-day')) {
+                return { colorClass: 'bg-pink-100 text-pink-800 border-pink-200', emoji: '🎂' };
+            }
+            if (cat.includes('imp') || cat.includes('star') || cat.includes('urgent') || cat.includes('priority')) {
+                return { colorClass: 'bg-amber-100 text-amber-900 border-amber-300', emoji: '⭐' };
+            }
+            if (cat.includes('event') || cat.includes('meet') || cat.includes('party') || cat.includes('anniversary')) {
+                return { colorClass: 'bg-indigo-100 text-indigo-800 border-indigo-200', emoji: '📅' };
+            }
+            if (cat.includes('remind') || cat.includes('alarm') || cat.includes('call')) {
+                return { colorClass: 'bg-sky-100 text-sky-800 border-sky-200', emoji: '⏰' };
+            }
+            if (cat.includes('work') || cat.includes('design') || cat.includes('code') || cat.includes('project')) {
+                return { colorClass: 'bg-blue-100 text-blue-800 border-blue-200', emoji: '💼' };
+            }
+            if (cat.includes('person') || cat.includes('health') || cat.includes('home')) {
+                return { colorClass: 'bg-emerald-100 text-emerald-800 border-emerald-200', emoji: '🌿' };
+            }
+            return { colorClass: 'bg-purple-100 text-purple-800 border-purple-200', emoji: '🏷️' };
         }
 
         function formatDate(dateStr) {
             if (!dateStr) return '';
             const options = { month: 'short', day: 'numeric' };
-            return new Date(dateStr).toLocaleDateString(undefined, options);
+            return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, options);
         }
 
         function escapeHtml(str) {
@@ -200,6 +313,14 @@
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
+        }
+
+        function selectHomeCategory(categoryName, btn) {
+            document.getElementById('task-category').value = categoryName;
+            document.querySelectorAll('#home-category-pills .category-pill').forEach(pill => {
+                pill.classList.remove('active', 'ring-2', 'ring-primary');
+            });
+            if (btn) btn.classList.add('active', 'ring-2', 'ring-primary');
         }
 
         function renderTasks() {
@@ -215,38 +336,43 @@
             tasks.forEach(task => {
                 const col = cols[task.status] || cols.todo;
                 counts[task.status] = (counts[task.status] || 0) + 1;
-                
+
                 const card = document.createElement('div');
-                card.className = "task-card bg-surface-container-lowest p-4 rounded-xl card-shadow border border-outline-variant cursor-grab active:cursor-grabbing hover:border-primary transition-colors flex flex-col gap-2";
+                card.className = "task-card bg-surface-container-lowest p-4 rounded-xl card-shadow border border-outline-variant/60 cursor-grab active:cursor-grabbing hover:border-primary transition-colors flex flex-col gap-2";
                 card.dataset.id = task.id;
 
                 let tagHtml = '';
                 if (task.category || task.due_date) {
-                    tagHtml = '<div class="flex items-center gap-2 mb-1 flex-wrap">';
+                    tagHtml = '<div class="flex items-center gap-1.5 mb-0.5 flex-wrap">';
                     if (task.category) {
-                        tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase ' + getCategoryColor(task.category) + '">' + escapeHtml(task.category) + '</span>';
+                        const catInfo = getCategoryInfo(task.category);
+                        tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase border ' + catInfo.colorClass + ' flex items-center gap-1">' + 
+                            '<span>' + catInfo.emoji + '</span> ' + escapeHtml(task.category) + '</span>';
                     }
                     if (task.due_date) {
-                        const isOverdue = new Date(task.due_date) < new Date() && task.status !== 'done';
-                        tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase flex items-center gap-1 ' + (isOverdue ? 'bg-red-100 text-red-800' : 'bg-surface-variant text-on-surface-variant') + '">';
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const dueDate = new Date(task.due_date + 'T00:00:00');
+                        const isOverdue = dueDate < today && task.status !== 'done';
+                        tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase flex items-center gap-1 border ' + (isOverdue ? 'bg-red-100 text-red-800 border-red-200' : 'bg-surface-variant text-on-surface-variant border-outline-variant/30') + '">';
                         tagHtml += '<span class="material-symbols-outlined text-[12px]">schedule</span> ' + escapeHtml(formatDate(task.due_date)) + '</span>';
                     }
                     tagHtml += '</div>';
                 }
 
-                card.innerHTML = tagHtml + 
+                card.innerHTML = tagHtml +
                     '<div class="flex justify-between items-start gap-2">' +
-                        '<h4 class="font-bold text-sm leading-tight">' + escapeHtml(task.title) + '</h4>' +
-                        '<div class="flex gap-1 shrink-0">' +
-                            '<button onclick="editTask(' + task.id + ')" class="text-on-surface-variant hover:text-primary transition-colors">' +
-                                '<span class="material-symbols-outlined text-[18px]">edit</span>' +
-                            '</button>' +
-                            '<button onclick="deleteTask(' + task.id + ')" class="text-on-surface-variant hover:text-error transition-colors">' +
-                                '<span class="material-symbols-outlined text-[18px]">delete</span>' +
-                            '</button>' +
-                        '</div>' +
+                    '<h4 class="font-bold text-sm leading-tight text-on-surface">' + escapeHtml(task.title) + '</h4>' +
+                    '<div class="flex gap-1 shrink-0">' +
+                    '<button onclick="editTask(' + task.id + ')" title="Edit" class="p-1 rounded hover:bg-surface-variant text-on-surface-variant hover:text-primary transition-colors">' +
+                    '<span class="material-symbols-outlined text-[18px]">edit</span>' +
+                    '</button>' +
+                    '<button onclick="deleteTask(' + task.id + ')" title="Delete" class="p-1 rounded hover:bg-red-50 text-on-surface-variant hover:text-error transition-colors">' +
+                    '<span class="material-symbols-outlined text-[18px]">delete</span>' +
+                    '</button>' +
                     '</div>' +
-                    (task.description ? '<p class="text-xs text-on-surface-variant line-clamp-2">' + escapeHtml(task.description) + '</p>' : '');
+                    '</div>' +
+                    (task.description ? '<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">' + escapeHtml(task.description) + '</p>' : '');
                 col.appendChild(card);
             });
 
@@ -268,21 +394,21 @@
                         const itemEl = evt.item;
                         const toStatus = evt.to.dataset.status;
                         const taskId = itemEl.dataset.id;
-                        
+
                         const taskIndex = tasks.findIndex(t => t.id == taskId);
-                        if(taskIndex > -1) {
-                            if(tasks[taskIndex].status === toStatus) return;
-                            
+                        if (taskIndex > -1) {
+                            if (tasks[taskIndex].status === toStatus) return;
+
                             tasks[taskIndex].status = toStatus;
                             renderTasks();
-                            
+
                             try {
                                 await fetch('/api/tasks/' + taskId, {
                                     method: 'PUT',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ status: toStatus, userId: user.id })
                                 });
-                            } catch(err) {
+                            } catch (err) {
                                 console.error('Failed to update status', err);
                             }
                         }
@@ -297,13 +423,25 @@
         function openModal() {
             form.reset();
             document.getElementById('task-id').value = '';
-            document.getElementById('modal-title').textContent = 'Add New Task';
+            document.getElementById('task-custom-tag').value = '';
+            document.getElementById('modal-title').textContent = 'Add New Item';
+            const defaultPill = document.querySelector('#home-category-pills .category-pill');
+            selectHomeCategory('Work', defaultPill);
             modal.classList.add('active');
+            setTimeout(() => document.getElementById('task-title').focus(), 100);
         }
 
         function closeModal() {
             modal.classList.remove('active');
         }
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
+        });
 
         function editTask(id) {
             const task = tasks.find(t => t.id === id);
@@ -311,52 +449,86 @@
             document.getElementById('task-id').value = task.id;
             document.getElementById('task-title').value = task.title;
             document.getElementById('task-desc').value = task.description || '';
-            document.getElementById('task-category').value = task.category || '';
             document.getElementById('task-date').value = task.due_date || '';
-            document.getElementById('modal-title').textContent = 'Edit Task';
+            document.getElementById('modal-title').textContent = 'Edit Item';
+
+            const rawCategory = task.category || 'Work';
+            document.getElementById('task-category').value = rawCategory;
+
+            // Highlight corresponding pill if preset matches, otherwise set custom tag
+            let matched = false;
+            document.querySelectorAll('#home-category-pills .category-pill').forEach(pill => {
+                pill.classList.remove('active', 'ring-2', 'ring-primary');
+                if (pill.textContent.toLowerCase().includes(rawCategory.toLowerCase())) {
+                    pill.classList.add('active', 'ring-2', 'ring-primary');
+                    matched = true;
+                }
+            });
+
+            if (!matched) {
+                document.getElementById('task-custom-tag').value = rawCategory;
+            } else {
+                document.getElementById('task-custom-tag').value = '';
+            }
+
             modal.classList.add('active');
         }
 
         async function deleteTask(id) {
-            if(!confirm('Are you sure you want to delete this task?')) return;
+            if (!confirm('Are you sure you want to delete this task?')) return;
             try {
-                await fetch('/api/tasks/' + id + '?userId=' + user.id, { method: 'DELETE' });
-                tasks = tasks.filter(t => t.id !== id);
-                renderTasks();
-            } catch(err) {
+                const res = await fetch('/api/tasks/' + id + '?userId=' + user.id, { method: 'DELETE' });
+                if (res.ok) {
+                    tasks = tasks.filter(t => t.id !== id);
+                    renderTasks();
+                } else {
+                    alert('Failed to delete task.');
+                }
+            } catch (err) {
                 console.error(err);
+                alert('Something went wrong while deleting task.');
             }
         }
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('task-id').value;
+            const customTag = document.getElementById('task-custom-tag').value.trim();
+            const selectedCategory = document.getElementById('task-category').value;
+            
             const payload = {
                 userId: user.id,
                 title: document.getElementById('task-title').value,
                 description: document.getElementById('task-desc').value,
-                category: document.getElementById('task-category').value,
+                category: customTag || selectedCategory || 'General',
                 due_date: document.getElementById('task-date').value
             };
 
             try {
+                let res;
                 if (id) {
-                    await fetch('/api/tasks/' + id, {
+                    res = await fetch('/api/tasks/' + id, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
                 } else {
-                    await fetch('/api/tasks', {
+                    res = await fetch('/api/tasks', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
                 }
-                closeModal();
-                fetchTasks();
+                if (res.ok) {
+                    closeModal();
+                    fetchTasks();
+                } else {
+                    const data = await res.json();
+                    alert('Error: ' + (data.error || 'Failed to save task.'));
+                }
             } catch (err) {
                 console.error(err);
+                alert('Something went wrong while saving task.');
             }
         });
 
@@ -370,4 +542,5 @@
         }
     </script>
 </body>
+
 </html>
