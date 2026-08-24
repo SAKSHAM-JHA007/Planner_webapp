@@ -428,6 +428,42 @@
         </div>
     </div>
 
+    <!-- Day Overview Modal (for dates with multiple items) -->
+    <div id="day-overview-modal"
+        class="modal fixed inset-0 bg-on-surface/50 backdrop-blur-sm z-50 items-center justify-center p-4">
+        <div
+            class="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg card-shadow border border-outline-variant relative max-h-[90vh] flex flex-col">
+            <button onclick="closeDayOverviewModal()" class="absolute top-4 right-4 text-on-surface-variant hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-2xl">close</span>
+            </button>
+
+            <div class="flex items-center gap-2.5 mb-1">
+                <div class="p-2 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">event_note</span>
+                </div>
+                <div>
+                    <h2 id="day-overview-title" class="text-xl font-bold text-on-surface">Events for Date</h2>
+                    <p id="day-overview-subtitle" class="text-xs text-on-surface-variant">All scheduled events and tasks for this date</p>
+                </div>
+            </div>
+
+            <div id="day-overview-list" class="flex flex-col gap-2.5 my-4 overflow-y-auto pr-1 flex-1 max-h-[55vh]">
+                <!-- Injected task cards -->
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-outline-variant/30 mt-auto">
+                <button type="button" id="day-overview-add-btn"
+                    class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-primary text-on-primary hover:opacity-90 active:scale-95 transition-all shadow-xs">
+                    <span class="material-symbols-outlined text-base">add</span> Add Event for this day
+                </button>
+                <button type="button" onclick="closeDayOverviewModal()"
+                    class="px-4 py-2 rounded-xl font-semibold text-xs text-on-surface-variant hover:bg-surface-variant transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- BottomNavBar -->
     <nav
         class="md:hidden fixed bottom-0 left-0 w-full z-40 flex justify-around items-center px-4 py-2 bg-surface border-t border-outline-variant shadow-sm">
@@ -547,14 +583,27 @@
 
         function setFilter(filter) {
             currentFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('bg-primary', 'text-white');
-                if (btn.id === 'filter-all') btn.classList.add('bg-surface-variant', 'text-on-surface');
+            const filterConfigs = {
+                all: { activeClass: 'bg-primary text-white', inactiveClass: 'bg-surface-variant text-on-surface' },
+                birthday: { activeClass: 'bg-pink-600 text-white shadow-xs', inactiveClass: 'bg-pink-100 text-pink-700 hover:bg-pink-200' },
+                important: { activeClass: 'bg-amber-600 text-white shadow-xs', inactiveClass: 'bg-amber-100 text-amber-800 hover:bg-amber-200' },
+                event: { activeClass: 'bg-indigo-600 text-white shadow-xs', inactiveClass: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' }
+            };
+
+            Object.keys(filterConfigs).forEach(f => {
+                const btn = document.getElementById('filter-' + f);
+                if (!btn) return;
+                const config = filterConfigs[f];
+                config.activeClass.split(' ').forEach(c => btn.classList.remove(c));
+                config.inactiveClass.split(' ').forEach(c => btn.classList.remove(c));
+
+                if (f === filter) {
+                    config.activeClass.split(' ').forEach(c => btn.classList.add(c));
+                } else {
+                    config.inactiveClass.split(' ').forEach(c => btn.classList.add(c));
+                }
             });
-            const activeBtn = document.getElementById('filter-' + filter);
-            if (activeBtn) {
-                activeBtn.classList.add('bg-primary', 'text-white');
-            }
+
             renderCalendar();
         }
 
@@ -963,17 +1012,141 @@
             }
         }
 
-        // Modal backdrop and ESC key handlers
-        [addEditModal, detailsModal].forEach(m => {
-            m.addEventListener('click', (e) => {
-                if (e.target === m) m.classList.remove('active');
+        // Day Overview Modal Functions
+        const dayOverviewModal = document.getElementById('day-overview-modal');
+
+        function showDayOverview(dateStr, dayTasks) {
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const formattedDate = dateObj.toLocaleDateString(undefined, options);
+
+            document.getElementById('day-overview-title').textContent = formattedDate;
+            document.getElementById('day-overview-subtitle').textContent = `${dayTasks.length} item${dayTasks.length === 1 ? '' : 's'} scheduled for this date`;
+
+            // Configure Add button for this specific day
+            const addBtn = document.getElementById('day-overview-add-btn');
+            addBtn.onclick = () => {
+                closeDayOverviewModal();
+                openAddModal(dateStr);
+            };
+
+            const listContainer = document.getElementById('day-overview-list');
+            listContainer.innerHTML = '';
+
+            dayTasks.forEach(task => {
+                const info = getCategoryInfo(task.category);
+                const isDone = task.status === 'done';
+
+                const card = document.createElement('div');
+                card.className = 'p-3 rounded-xl border border-outline-variant/50 bg-surface-container-lowest hover:border-primary/50 transition-colors flex items-center justify-between gap-3 shadow-xs';
+                
+                card.innerHTML = `
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <button onclick="toggleDayTaskStatus(${task.id}, '${task.status}', '${dateStr}')" title="${isDone ? 'Mark Incomplete' : 'Mark Done'}" class="shrink-0 text-on-surface-variant hover:text-primary">
+                            <span class="material-symbols-outlined text-xl ${isDone ? 'text-green-600' : ''}">${isDone ? 'check_circle' : 'radio_button_unchecked'}</span>
+                        </button>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${info.badgeClass} flex items-center gap-1">
+                                    <span>${info.emoji}</span> ${escapeHtml(task.category || 'General')}
+                                </span>
+                            </div>
+                            <h4 class="text-sm font-bold text-on-surface truncate ${isDone ? 'line-through opacity-60' : ''}">${escapeHtml(task.title)}</h4>
+                            ${task.description ? `<p class="text-xs text-on-surface-variant line-clamp-1 mt-0.5">${escapeHtml(task.description)}</p>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="viewFromDayOverview(${task.id})" title="View Details" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors">
+                            <span class="material-symbols-outlined text-base">visibility</span>
+                        </button>
+                        <button onclick="editFromDayOverview(${task.id})" title="Edit" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors">
+                            <span class="material-symbols-outlined text-base">edit</span>
+                        </button>
+                        <button onclick="deleteDayTask(${task.id}, '${dateStr}')" title="Delete" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-red-50 hover:text-error transition-colors">
+                            <span class="material-symbols-outlined text-base">delete</span>
+                        </button>
+                    </div>
+                `;
+                listContainer.appendChild(card);
             });
+
+            dayOverviewModal.classList.add('active');
+        }
+
+        function closeDayOverviewModal() {
+            dayOverviewModal.classList.remove('active');
+        }
+
+        function viewFromDayOverview(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                closeDayOverviewModal();
+                showTaskDetails(task);
+            }
+        }
+
+        function editFromDayOverview(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                closeDayOverviewModal();
+                openEditModal(task);
+            }
+        }
+
+        async function toggleDayTaskStatus(taskId, currentStatus, dateStr) {
+            const newStatus = currentStatus === 'done' ? 'todo' : 'done';
+            try {
+                const res = await fetch('/api/tasks/' + taskId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus, userId: user.id })
+                });
+                if (res.ok) {
+                    await fetchTasks();
+                    const updatedTasks = tasks.filter(t => t.due_date === dateStr);
+                    if (updatedTasks.length > 0) {
+                        showDayOverview(dateStr, updatedTasks);
+                    } else {
+                        closeDayOverviewModal();
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function deleteDayTask(taskId, dateStr) {
+            if (!confirm('Are you sure you want to delete this item?')) return;
+            try {
+                const res = await fetch('/api/tasks/' + taskId + '?userId=' + user.id, { method: 'DELETE' });
+                if (res.ok) {
+                    await fetchTasks();
+                    const remainingTasks = tasks.filter(t => t.due_date === dateStr);
+                    if (remainingTasks.length > 0) {
+                        showDayOverview(dateStr, remainingTasks);
+                    } else {
+                        closeDayOverviewModal();
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Modal backdrop and ESC key handlers
+        [addEditModal, detailsModal, dayOverviewModal].forEach(m => {
+            if (m) {
+                m.addEventListener('click', (e) => {
+                    if (e.target === m) m.classList.remove('active');
+                });
+            }
         });
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeAddEditModal();
                 closeDetailsModal();
+                closeDayOverviewModal();
             }
         });
 

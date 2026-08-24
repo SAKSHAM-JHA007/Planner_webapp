@@ -264,14 +264,25 @@
         const ICONS = ['palette', 'rocket_launch', 'lightbulb', 'business_center', 'menu_book', 'flag', 'extension', 'bolt'];
         const COLORS = ['#a04100', '#0062a1', '#2e7d32', '#6a1b9a', '#c2185b', '#e65100', '#37474f'];
 
-        function initPickers() {
+        function initPickers(selectedIcon = 'palette', selectedColor = '#a04100') {
+            document.getElementById('board-icon').value = selectedIcon;
+            document.getElementById('board-color').value = selectedColor;
+            
+            const preview = document.getElementById('modal-board-icon-preview');
+            if (preview) {
+                preview.innerHTML = '<span class="material-symbols-outlined text-2xl">' + selectedIcon + '</span>';
+                preview.style.color = selectedColor;
+            }
+
             // Render Icon Picker
             const iconContainer = document.getElementById('icon-picker-container');
             iconContainer.innerHTML = '';
-            ICONS.forEach((icon, index) => {
+            ICONS.forEach((icon) => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'icon-option p-2.5 rounded-xl border border-outline-variant/60 flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary transition-all ' + (index === 0 ? 'active' : '');
+                btn.dataset.icon = icon;
+                const isSelected = icon === selectedIcon;
+                btn.className = 'icon-option p-2.5 rounded-xl border border-outline-variant/60 flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary transition-all ' + (isSelected ? 'active' : '');
                 btn.innerHTML = '<span class="material-symbols-outlined text-xl">' + icon + '</span>';
                 btn.onclick = () => {
                     document.getElementById('board-icon').value = icon;
@@ -285,10 +296,12 @@
             // Render Color Picker
             const colorContainer = document.getElementById('color-picker-container');
             colorContainer.innerHTML = '';
-            COLORS.forEach((color, index) => {
+            COLORS.forEach((color) => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'color-option w-7 h-7 rounded-full transition-all ' + (index === 0 ? 'active' : '');
+                btn.dataset.color = color;
+                const isSelected = color.toLowerCase() === selectedColor.toLowerCase();
+                btn.className = 'color-option w-7 h-7 rounded-full transition-all ' + (isSelected ? 'active' : '');
                 btn.style.backgroundColor = color;
                 btn.onclick = () => {
                     document.getElementById('board-color').value = color;
@@ -341,19 +354,14 @@
                 const card = document.createElement('div');
                 card.className = "board-card bg-surface-container-lowest rounded-3xl p-6 card-shadow border border-outline-variant/50 flex flex-col justify-between cursor-pointer relative overflow-hidden group";
                 
-                // Color bar top
-                const topBar = document.createElement('div');
-                topBar.className = "absolute top-0 left-0 right-0 h-1.5";
-                topBar.style.backgroundColor = board.color || '#a04100';
-                card.appendChild(topBar);
-
                 const dateCreated = new Date(board.created_at || Date.now()).toLocaleDateString(undefined, {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric'
                 });
 
-                card.innerHTML += `
+                card.innerHTML = `
+                    <div class="absolute top-0 left-0 right-0 h-1.5" style="background-color: ${board.color || '#a04100'};"></div>
                     <div>
                         <div class="flex items-center justify-between mb-4">
                             <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm" 
@@ -415,9 +423,7 @@
             boardForm.reset();
             document.getElementById('board-id').value = '';
             document.getElementById('board-modal-title').textContent = 'Create New Board';
-            document.getElementById('board-icon').value = 'palette';
-            document.getElementById('board-color').value = '#a04100';
-            initPickers();
+            initPickers('palette', '#a04100');
             boardModal.classList.add('active');
             setTimeout(() => document.getElementById('board-title').focus(), 100);
         }
@@ -428,19 +434,9 @@
             document.getElementById('board-id').value = board.id;
             document.getElementById('board-title').value = board.title;
             document.getElementById('board-desc').value = board.description || '';
-            document.getElementById('board-icon').value = board.icon || 'palette';
-            document.getElementById('board-color').value = board.color || '#a04100';
             document.getElementById('board-modal-title').textContent = 'Edit Board Details';
 
-            initPickers();
-            
-            // Activate selected icon & color
-            document.querySelectorAll('.icon-option').forEach(btn => {
-                if (btn.textContent.includes(board.icon)) btn.classList.add('active');
-            });
-            document.querySelectorAll('.color-option').forEach(btn => {
-                if (btn.style.backgroundColor === board.color) btn.classList.add('active');
-            });
+            initPickers(board.icon || 'palette', board.color || '#a04100');
 
             boardModal.classList.add('active');
         }

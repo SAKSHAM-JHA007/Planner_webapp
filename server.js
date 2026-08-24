@@ -59,6 +59,10 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'home.html'));
 });
 
+app.get('/index.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'home.html'));
+});
+
 app.get('/home', (req, res) => {
     res.sendFile(path.join(__dirname, 'home.html'));
 });
@@ -102,6 +106,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
         console.error('Error opening database', err);
     } else {
         console.log('Database connected.');
+        db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
+            if (pragmaErr) console.error('Error enabling foreign keys:', pragmaErr);
+        });
         const sqlSchema = fs.readFileSync(path.join(__dirname, 'users.sql'), 'utf8');
         db.exec(sqlSchema, (err) => {
             if (err) {
@@ -123,10 +130,13 @@ app.post('/api/signup', authLimiter, async (req, res) => {
         return res.status(400).json({ error: 'All fields are required.' });
     }
 
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        db.run('INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)', [name, email, hashedPassword], function (err) {
+        db.run('INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)', [cleanName, cleanEmail, hashedPassword], function (err) {
             if (err) {
                 if (err.message && err.message.includes('UNIQUE constraint failed')) {
                     return res.status(400).json({ error: 'Email already exists.' });
@@ -147,7 +157,9 @@ app.post('/api/login', authLimiter, (req, res) => {
         return res.status(400).json({ error: 'Email and password are required.' });
     }
 
-    db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
+    const cleanEmail = email.trim().toLowerCase();
+
+    db.get('SELECT * FROM users WHERE email = ?', [cleanEmail], async (err, user) => {
         if (err) {
             return res.status(500).json({ error: 'Database error.' });
         }

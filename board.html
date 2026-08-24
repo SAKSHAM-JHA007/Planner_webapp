@@ -566,11 +566,16 @@
             // Setup Card Dragging
             const handle = card.querySelector('.card-drag-handle') || card;
             handle.addEventListener('mousedown', (e) => {
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+                if (e.target.closest('button, a, input, textarea, select')) return;
                 startCardDrag(el.id, e);
             });
 
-            cardsContainer.appendChild(card);
+            const existingCard = document.getElementById(`card-${el.id}`);
+            if (existingCard) {
+                existingCard.replaceWith(card);
+            } else {
+                cardsContainer.appendChild(card);
+            }
         }
 
         // Card Dragging System
@@ -679,7 +684,7 @@
                 pathEl.setAttribute('stroke', conn.color || '#8e7164');
                 pathEl.setAttribute('stroke-width', '2.5');
                 pathEl.setAttribute('stroke-dasharray', dashArray);
-                pathEl.setAttribute('marker-end', 'url(#arrow-dotted)');
+                pathEl.setAttribute('marker-end', conn.style === 'solid' ? 'url(#arrow-solid)' : 'url(#arrow-dotted)');
                 pathEl.setAttribute('class', 'line-path');
 
                 connectionsGroup.appendChild(pathEl);
@@ -1162,6 +1167,7 @@
         }, { passive: false });
 
         function parseJSON(str, fallback) {
+            if (typeof str === 'object' && str !== null) return str;
             try { return JSON.parse(str); } catch (e) { return fallback; }
         }
 

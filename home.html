@@ -301,8 +301,9 @@
 
         function formatDate(dateStr) {
             if (!dateStr) return '';
+            const cleanDate = dateStr.split('T')[0];
             const options = { month: 'short', day: 'numeric' };
-            return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, options);
+            return new Date(cleanDate + 'T00:00:00').toLocaleDateString(undefined, options);
         }
 
         function escapeHtml(str) {
@@ -352,7 +353,8 @@
                     if (task.due_date) {
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
-                        const dueDate = new Date(task.due_date + 'T00:00:00');
+                        const cleanDate = task.due_date.split('T')[0];
+                        const dueDate = new Date(cleanDate + 'T00:00:00');
                         const isOverdue = dueDate < today && task.status !== 'done';
                         tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase flex items-center gap-1 border ' + (isOverdue ? 'bg-red-100 text-red-800 border-red-200' : 'bg-surface-variant text-on-surface-variant border-outline-variant/30') + '">';
                         tagHtml += '<span class="material-symbols-outlined text-[12px]">schedule</span> ' + escapeHtml(formatDate(task.due_date)) + '</span>';
@@ -400,7 +402,7 @@
                             if (tasks[taskIndex].status === toStatus) return;
 
                             tasks[taskIndex].status = toStatus;
-                            renderTasks();
+                            setTimeout(renderTasks, 0);
 
                             try {
                                 await fetch('/api/tasks/' + taskId, {

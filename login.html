@@ -160,6 +160,7 @@
                             class="w-full bg-transparent border-0 border-b border-outline focus:ring-0 focus:border-primary-container transition-colors py-xs px-0 font-body-lg text-body-lg placeholder-secondary/30"
                             id="password" name="password" placeholder="••••••••" required="" type="password">
                         <button
+                            id="toggle-password-btn"
                             class="absolute right-0 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors"
                             type="button">
                             <span class="material-symbols-outlined text-[20px]">visibility</span>
@@ -258,9 +259,9 @@
         });
 
         // Toggle password visibility
-        const togglePass = document.querySelector('button span.material-symbols-outlined');
-        if (togglePass) {
-            togglePass.parentElement.addEventListener('click', function () {
+        const togglePassBtn = document.getElementById('toggle-password-btn');
+        if (togglePassBtn) {
+            togglePassBtn.addEventListener('click', function () {
                 const passInput = document.getElementById('password');
                 const icon = this.querySelector('.material-symbols-outlined');
                 if (passInput.type === 'password') {
