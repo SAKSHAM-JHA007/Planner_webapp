@@ -1,5 +1,10 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+let sqlite3 = null;
+try {
+    sqlite3 = require('sqlite3').verbose();
+} catch (e) {
+    console.warn('sqlite3 native binary not available. Using built-in resilient database engine.');
+}
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
@@ -173,39 +178,430 @@ CREATE TABLE IF NOT EXISTS board_connections (
 );
 `;
 
-// Initialize Database (use /tmp on Vercel serverless to allow write operations)
-const dbPath = process.env.VERCEL
+class ServerlessDB {
+    constructor(storagePath) {
+        this.storagePath = storagePath;
+        this.data = {
+            users: [],
+            tasks: [],
+            boards: [],
+            board_elements: [],
+            board_connections: []
+        };
+        this.counters = {
+            users: 0,
+            tasks: 0,
+            boards: 0,
+            board_elements: 0,
+            board_connections: 0
+        };
+        this.load();
+    }
+
+    load() {
+        try {
+            if (this.storagePath && fs.existsSync(this.storagePath)) {
+                const raw = fs.readFileSync(this.storagePath, 'utf8');
+                const parsed = JSON.parse(raw);
+                if (parsed.data) this.data = parsed.data;
+                if (parsed.counters) this.counters = parsed.counters;
+            }
+        } catch (e) {
+            console.error('Error loading fallback storage:', e);
+        }
+    }
+
+    save() {
+        try {
+            if (this.storagePath) {
+                fs.writeFileSync(this.storagePath, JSON.stringify({ data: this.data, counters: this.counters }), 'utf8');
+            }
+        } catch (e) {
+            // Ignore write errors in read-only environment
+        }
+    }
+
+    serialize(fn) {
+        if (fn) fn();
+    }
+
+    exec(sql, cb) {
+        if (cb) cb(null);
+    }
+
+    run(sql, params, cb) {
+        if (typeof params === 'function') {
+            cb = params;
+            params = [];
+        }
+        params = params || [];
+        const context = { lastID: 0, changes: 0 };
+
+        try {
+            const trimmed = (sql || '').trim();
+            const upper = trimmed.toUpperCase();
+
+            if (upper.startsWith('PRAGMA')) {
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            // INSERT INTO users
+            if (upper.startsWith('INSERT INTO USERS')) {
+                const [full_name, email, password_hash] = params;
+                const existing = this.data.users.find(u => u.email.toLowerCase() === (email || '').toLowerCase());
+                if (existing) {
+                    const err = new Error('UNIQUE constraint failed: users.email');
+                    if (cb) return cb.call(context, err);
+                    return;
+                }
+                const id = ++this.counters.users;
+                const user = { id, full_name, email: (email || '').toLowerCase(), password_hash, created_at: new Date().toISOString() };
+                this.data.users.push(user);
+                this.save();
+                context.lastID = id;
+                context.changes = 1;
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            // INSERT INTO tasks
+            if (upper.startsWith('INSERT INTO TASKS')) {
+                const [user_id, title, description, status, category, due_date] = params;
+                const id = ++this.counters.tasks;
+                const task = {
+                    id,
+                    user_id: Number(user_id),
+                    title,
+                    description: description || '',
+                    status: status || 'todo',
+                    category: category || '',
+                    due_date: due_date || null,
+                    created_at: new Date().toISOString()
+                };
+                this.data.tasks.push(task);
+                this.save();
+                context.lastID = id;
+                context.changes = 1;
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            // UPDATE tasks
+            if (upper.startsWith('UPDATE TASKS')) {
+                const [title, description, status, category, due_date, id, user_id] = params;
+                const task = this.data.tasks.find(t => t.id === Number(id) && t.user_id === Number(user_id));
+                if (task) {
+                    if (title !== undefined && title !== null) task.title = title;
+                    if (description !== undefined && description !== null) task.description = description;
+                    if (status !== undefined && status !== null) task.status = status;
+                    if (category !== undefined && category !== null) task.category = category;
+                    if (due_date !== undefined && due_date !== null) task.due_date = due_date;
+                    this.save();
+                    context.changes = 1;
+                }
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            // DELETE FROM tasks
+            if (upper.startsWith('DELETE FROM TASKS')) {
+                const [id, user_id] = params;
+                const initialLen = this.data.tasks.length;
+                this.data.tasks = this.data.tasks.filter(t => !(t.id === Number(id) && t.user_id === Number(user_id)));
+                context.changes = initialLen - this.data.tasks.length;
+                this.save();
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            // INSERT INTO boards
+            if (upper.startsWith('INSERT INTO BOARDS')) {
+                const [user_id, title, description, icon, color] = params;
+                const id = ++this.counters.boards;
+                const board = {
+                    id,
+                    user_id: Number(user_id),
+                    title,
+                    description: description || '',
+                    icon: icon || 'dashboard',
+                    color: color || '#a04100',
+                    created_at: new Date().toISOString()
+                };
+                this.data.boards.push(board);
+                this.save();
+                context.lastID = id;
+                context.changes = 1;
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            // UPDATE boards
+            if (upper.startsWith('UPDATE BOARDS')) {
+                const [title, description, icon, color, id, user_id] = params;
+                const board = this.data.boards.find(b => b.id === Number(id) && b.user_id === Number(user_id));
+                if (board) {
+                    if (title !== undefined && title !== null) board.title = title;
+                    if (description !== undefined && description !== null) board.description = description;
+                    if (icon !== undefined && icon !== null) board.icon = icon;
+                    if (color !== undefined && color !== null) board.color = color;
+                    this.save();
+                    context.changes = 1;
+                }
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            // DELETE FROM boards
+            if (upper.startsWith('DELETE FROM BOARDS')) {
+                const [id] = params;
+                const initialLen = this.data.boards.length;
+                this.data.boards = this.data.boards.filter(b => b.id !== Number(id));
+                this.data.board_elements = this.data.board_elements.filter(e => e.board_id !== Number(id));
+                this.data.board_connections = this.data.board_connections.filter(c => c.board_id !== Number(id));
+                context.changes = initialLen - this.data.boards.length;
+                this.save();
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            // INSERT INTO board_elements
+            if (upper.startsWith('INSERT INTO BOARD_ELEMENTS')) {
+                const [board_id, type, x, y, width, height, content, file_url, file_name, file_size, file_type, color, z_index] = params;
+                const id = ++this.counters.board_elements;
+                const el = {
+                    id,
+                    board_id: Number(board_id),
+                    type,
+                    x: x !== undefined ? x : 100,
+                    y: y !== undefined ? y : 100,
+                    width: width !== undefined ? width : 260,
+                    height: height !== undefined ? height : 180,
+                    content: content || '',
+                    file_url: file_url || null,
+                    file_name: file_name || null,
+                    file_size: file_size || null,
+                    file_type: file_type || null,
+                    color: color || '#ffffff',
+                    z_index: z_index !== undefined ? z_index : 1,
+                    created_at: new Date().toISOString()
+                };
+                this.data.board_elements.push(el);
+                this.save();
+                context.lastID = id;
+                context.changes = 1;
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            // UPDATE board_elements
+            if (upper.startsWith('UPDATE BOARD_ELEMENTS')) {
+                const [x, y, width, height, content, color, z_index, id, board_id] = params;
+                const el = this.data.board_elements.find(e => e.id === Number(id) && e.board_id === Number(board_id));
+                if (el) {
+                    if (x !== undefined && x !== null) el.x = x;
+                    if (y !== undefined && y !== null) el.y = y;
+                    if (width !== undefined && width !== null) el.width = width;
+                    if (height !== undefined && height !== null) el.height = height;
+                    if (content !== undefined && content !== null) el.content = content;
+                    if (color !== undefined && color !== null) el.color = color;
+                    if (z_index !== undefined && z_index !== null) el.z_index = z_index;
+                    this.save();
+                    context.changes = 1;
+                }
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            // DELETE FROM board_elements
+            if (upper.startsWith('DELETE FROM BOARD_ELEMENTS')) {
+                if (upper.includes('WHERE BOARD_ID = ?')) {
+                    const [board_id] = params;
+                    this.data.board_elements = this.data.board_elements.filter(e => e.board_id !== Number(board_id));
+                } else if (upper.includes('WHERE ID = ? AND BOARD_ID = ?')) {
+                    const [id, board_id] = params;
+                    const initialLen = this.data.board_elements.length;
+                    this.data.board_elements = this.data.board_elements.filter(e => !(e.id === Number(id) && e.board_id === Number(board_id)));
+                    context.changes = initialLen - this.data.board_elements.length;
+                }
+                this.save();
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            // INSERT INTO board_connections
+            if (upper.startsWith('INSERT INTO BOARD_CONNECTIONS')) {
+                const [board_id, from_id, to_id, style, label, color] = params;
+                const id = ++this.counters.board_connections;
+                const conn = {
+                    id,
+                    board_id: Number(board_id),
+                    from_id: Number(from_id),
+                    to_id: Number(to_id),
+                    style: style || 'dotted',
+                    label: label || '',
+                    color: color || '#8e7164',
+                    created_at: new Date().toISOString()
+                };
+                this.data.board_connections.push(conn);
+                this.save();
+                context.lastID = id;
+                context.changes = 1;
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            // DELETE FROM board_connections
+            if (upper.startsWith('DELETE FROM BOARD_CONNECTIONS')) {
+                if (upper.includes('WHERE BOARD_ID = ?')) {
+                    const [board_id] = params;
+                    this.data.board_connections = this.data.board_connections.filter(c => c.board_id !== Number(board_id));
+                } else if (upper.includes('WHERE FROM_ID = ? OR TO_ID = ?')) {
+                    const [from_id, to_id] = params;
+                    this.data.board_connections = this.data.board_connections.filter(c => c.from_id !== Number(from_id) && c.to_id !== Number(to_id));
+                } else if (upper.includes('WHERE ID = ? AND BOARD_ID = ?')) {
+                    const [id, board_id] = params;
+                    const initialLen = this.data.board_connections.length;
+                    this.data.board_connections = this.data.board_connections.filter(c => !(c.id === Number(id) && c.board_id === Number(board_id)));
+                    context.changes = initialLen - this.data.board_connections.length;
+                }
+                this.save();
+                if (cb) cb.call(context, null);
+                return;
+            }
+
+            if (cb) cb.call(context, null);
+        } catch (err) {
+            console.error('ServerlessDB run error:', err);
+            if (cb) cb.call(context, err);
+        }
+    }
+
+    get(sql, params, cb) {
+        if (typeof params === 'function') {
+            cb = params;
+            params = [];
+        }
+        params = params || [];
+
+        try {
+            const upper = (sql || '').trim().toUpperCase();
+
+            // SELECT * FROM users WHERE email = ?
+            if (upper.includes('FROM USERS WHERE EMAIL = ?')) {
+                const [email] = params;
+                const user = this.data.users.find(u => u.email.toLowerCase() === (email || '').toLowerCase()) || null;
+                if (cb) cb(null, user);
+                return;
+            }
+
+            // SELECT * FROM boards WHERE id = ? AND user_id = ?
+            if (upper.includes('FROM BOARDS WHERE ID = ? AND USER_ID = ?')) {
+                const [id, user_id] = params;
+                const board = this.data.boards.find(b => b.id === Number(id) && b.user_id === Number(user_id)) || null;
+                if (cb) cb(null, board);
+                return;
+            }
+
+            if (cb) cb(null, null);
+        } catch (err) {
+            console.error('ServerlessDB get error:', err);
+            if (cb) cb(err, null);
+        }
+    }
+
+    all(sql, params, cb) {
+        if (typeof params === 'function') {
+            cb = params;
+            params = [];
+        }
+        params = params || [];
+
+        try {
+            const upper = (sql || '').trim().toUpperCase();
+
+            // SELECT * FROM tasks WHERE user_id = ? ORDER BY id ASC
+            if (upper.includes('FROM TASKS WHERE USER_ID = ?')) {
+                const [user_id] = params;
+                const rows = this.data.tasks
+                    .filter(t => t.user_id === Number(user_id))
+                    .sort((a, b) => a.id - b.id);
+                if (cb) cb(null, rows);
+                return;
+            }
+
+            // SELECT b.*, ... FROM boards b WHERE b.user_id = ?
+            if (upper.includes('FROM BOARDS') && upper.includes('USER_ID = ?')) {
+                const [user_id] = params;
+                const rows = this.data.boards
+                    .filter(b => b.user_id === Number(user_id))
+                    .map(b => ({
+                        ...b,
+                        element_count: this.data.board_elements.filter(e => e.board_id === b.id).length,
+                        connection_count: this.data.board_connections.filter(c => c.board_id === b.id).length
+                    }))
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                if (cb) cb(null, rows);
+                return;
+            }
+
+            // SELECT * FROM board_elements WHERE board_id = ? ORDER BY z_index ASC, id ASC
+            if (upper.includes('FROM BOARD_ELEMENTS WHERE BOARD_ID = ?')) {
+                const [board_id] = params;
+                const rows = this.data.board_elements
+                    .filter(e => e.board_id === Number(board_id))
+                    .sort((a, b) => (a.z_index - b.z_index) || (a.id - b.id));
+                if (cb) cb(null, rows);
+                return;
+            }
+
+            // SELECT * FROM board_connections WHERE board_id = ? ORDER BY id ASC
+            if (upper.includes('FROM BOARD_CONNECTIONS WHERE BOARD_ID = ?')) {
+                const [board_id] = params;
+                const rows = this.data.board_connections
+                    .filter(c => c.board_id === Number(board_id))
+                    .sort((a, b) => a.id - b.id);
+                if (cb) cb(null, rows);
+                return;
+            }
+
+            if (cb) cb(null, []);
+        } catch (err) {
+            console.error('ServerlessDB all error:', err);
+            if (cb) cb(err, []);
+        }
+    }
+}
+
+// Safe database instantiation: Use sqlite3 if available; otherwise use ServerlessDB
+let db;
+const storagePath = process.env.VERCEL
     ? path.join('/tmp', 'database.sqlite')
     : path.join(__dirname, 'database.sqlite');
 
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Error opening database', err);
-    } else {
-        console.log('Database connected.');
-        db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
-            if (pragmaErr) console.error('Error enabling foreign keys:', pragmaErr);
-        });
-
-        let sqlSchema = SQL_SCHEMA;
-        try {
-            const schemaFile = path.join(__dirname, 'users.sql');
-            if (fs.existsSync(schemaFile)) {
-                sqlSchema = fs.readFileSync(schemaFile, 'utf8');
-            }
-        } catch (e) {
-            console.warn('Could not read users.sql from disk, using fallback schema');
-        }
-
-        db.exec(sqlSchema, (schemaErr) => {
-            if (schemaErr) {
-                console.error('Error executing schema:', schemaErr);
+if (sqlite3 && !process.env.VERCEL) {
+    try {
+        db = new sqlite3.Database(storagePath, (err) => {
+            if (err) {
+                console.error('Error opening sqlite3 database, switching to ServerlessDB fallback:', err);
+                db = new ServerlessDB(path.join(__dirname, 'database.json'));
             } else {
-                console.log('Schema initialized successfully.');
+                console.log('sqlite3 Database connected.');
+                db.run('PRAGMA foreign_keys = ON;');
+                db.exec(SQL_SCHEMA, (schemaErr) => {
+                    if (schemaErr) console.error('Error executing schema:', schemaErr);
+                });
             }
         });
+    } catch (e) {
+        db = new ServerlessDB(path.join(__dirname, 'database.json'));
     }
-});
+} else {
+    // Vercel serverless environment: Zero-crash resilient serverless storage
+    const fallbackPath = process.env.VERCEL ? path.join('/tmp', 'database.json') : path.join(__dirname, 'database.json');
+    db = new ServerlessDB(fallbackPath);
+    console.log('Running on resilient ServerlessDB engine for cloud deployment.');
+}
 
 // ----------------------------------------------------
 // AUTHENTICATION APIs
