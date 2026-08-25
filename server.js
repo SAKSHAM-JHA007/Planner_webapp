@@ -11,10 +11,17 @@ const multer = require('multer');
 const app = express();
 const PORT = 3000;
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
+// Ensure uploads directory exists (use /tmp on Vercel serverless)
+const uploadsDir = process.env.VERCEL 
+    ? path.join('/tmp', 'uploads')
+    : path.join(__dirname, 'uploads');
+
 if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
+    try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    } catch (err) {
+        console.error('Error creating uploads directory:', err);
+    }
 }
 
 // Multer Storage configuration
@@ -99,8 +106,10 @@ app.get('/signup', (req, res) => {
     res.sendFile(path.join(__dirname, 'signup.html'));
 });
 
-// Initialize Database
-const dbPath = path.join(__dirname, 'database.sqlite');
+// Initialize Database (use /tmp on Vercel serverless to allow write operations)
+const dbPath = process.env.VERCEL
+    ? path.join('/tmp', 'database.sqlite')
+    : path.join(__dirname, 'database.sqlite');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error opening database', err);
@@ -487,6 +496,10 @@ app.delete('/api/boards/:id/connections/:connId', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server is running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
