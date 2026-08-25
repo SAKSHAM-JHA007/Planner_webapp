@@ -1,9 +1,16 @@
 {
   "version": 2,
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index.js"
-    }
+    { "source": "/", "destination": "/home.html" },
+    { "source": "/home", "destination": "/home.html" },
+    { "source": "/kanban", "destination": "/home.html" },
+    { "source": "/boards", "destination": "/boards.html" },
+    { "source": "/my-boards", "destination": "/boards.html" },
+    { "source": "/board", "destination": "/board.html" },
+    { "source": "/canvas", "destination": "/board.html" },
+    { "source": "/calendar", "destination": "/calendar.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/signup", "destination": "/signup.html" },
+    { "source": "/api/(.*)", "destination": "/api/index.js" }
   ]
 }

@@ -106,10 +106,78 @@ app.get('/signup', (req, res) => {
     res.sendFile(path.join(__dirname, 'signup.html'));
 });
 
+// Embedded SQL Schema to guarantee initialization on serverless environments without depending on disk files
+const SQL_SCHEMA = `
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    full_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    status VARCHAR(50) DEFAULT 'todo',
+    category VARCHAR(50),
+    due_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS boards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    icon VARCHAR(50) DEFAULT 'dashboard',
+    color VARCHAR(50) DEFAULT '#a04100',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS board_elements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    board_id INTEGER NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    x REAL DEFAULT 100,
+    y REAL DEFAULT 100,
+    width REAL DEFAULT 260,
+    height REAL DEFAULT 180,
+    content TEXT,
+    file_url TEXT,
+    file_name TEXT,
+    file_size INTEGER,
+    file_type TEXT,
+    color VARCHAR(50) DEFAULT '#ffffff',
+    z_index INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(board_id) REFERENCES boards(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS board_connections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    board_id INTEGER NOT NULL,
+    from_id INTEGER NOT NULL,
+    to_id INTEGER NOT NULL,
+    style VARCHAR(50) DEFAULT 'dotted',
+    label TEXT,
+    color VARCHAR(50) DEFAULT '#8e7164',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(board_id) REFERENCES boards(id) ON DELETE CASCADE,
+    FOREIGN KEY(from_id) REFERENCES board_elements(id) ON DELETE CASCADE,
+    FOREIGN KEY(to_id) REFERENCES board_elements(id) ON DELETE CASCADE
+);
+`;
+
 // Initialize Database (use /tmp on Vercel serverless to allow write operations)
 const dbPath = process.env.VERCEL
     ? path.join('/tmp', 'database.sqlite')
     : path.join(__dirname, 'database.sqlite');
+
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error opening database', err);
@@ -118,12 +186,22 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
             if (pragmaErr) console.error('Error enabling foreign keys:', pragmaErr);
         });
-        const sqlSchema = fs.readFileSync(path.join(__dirname, 'users.sql'), 'utf8');
-        db.exec(sqlSchema, (err) => {
-            if (err) {
-                console.error('Error executing schema:', err);
+
+        let sqlSchema = SQL_SCHEMA;
+        try {
+            const schemaFile = path.join(__dirname, 'users.sql');
+            if (fs.existsSync(schemaFile)) {
+                sqlSchema = fs.readFileSync(schemaFile, 'utf8');
+            }
+        } catch (e) {
+            console.warn('Could not read users.sql from disk, using fallback schema');
+        }
+
+        db.exec(sqlSchema, (schemaErr) => {
+            if (schemaErr) {
+                console.error('Error executing schema:', schemaErr);
             } else {
-                console.log('Schema initialized.');
+                console.log('Schema initialized successfully.');
             }
         });
     }
