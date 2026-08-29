@@ -51,7 +51,7 @@ const upload = multer({
 app.use(helmet({
     contentSecurityPolicy: false // Disabled for inline scripts/styles in development
 }));
-app.use(cors());
+app.use(cors({ origin: 'http://localhost:3000' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
