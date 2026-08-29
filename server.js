@@ -575,9 +575,11 @@ class ServerlessDB {
 
 // Safe database instantiation: Use sqlite3 if available; otherwise use ServerlessDB
 let db;
-const storagePath = process.env.VERCEL
-    ? path.join('/tmp', 'database.sqlite')
-    : path.join(__dirname, 'database.sqlite');
+const storagePath = process.env.NODE_ENV === 'test'
+    ? ':memory:'
+    : process.env.VERCEL
+        ? path.join('/tmp', 'database.sqlite')
+        : path.join(__dirname, 'database.sqlite');
 
 if (sqlite3 && !process.env.VERCEL) {
     try {
