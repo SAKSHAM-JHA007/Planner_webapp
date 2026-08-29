@@ -324,6 +324,52 @@
             if (btn) btn.classList.add('active', 'ring-2', 'ring-primary');
         }
 
+        function createTaskTagsHtml(task) {
+            let tagHtml = '';
+            if (task.category || task.due_date) {
+                tagHtml = '<div class="flex items-center gap-1.5 mb-0.5 flex-wrap">';
+                if (task.category) {
+                    const catInfo = getCategoryInfo(task.category);
+                    tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase border ' + catInfo.colorClass + ' flex items-center gap-1">' +
+                        '<span>' + catInfo.emoji + '</span> ' + escapeHtml(task.category) + '</span>';
+                }
+                if (task.due_date) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const cleanDate = task.due_date.split('T')[0];
+                    const dueDate = new Date(cleanDate + 'T00:00:00');
+                    const isOverdue = dueDate < today && task.status !== 'done';
+                    tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase flex items-center gap-1 border ' + (isOverdue ? 'bg-red-100 text-red-800 border-red-200' : 'bg-surface-variant text-on-surface-variant border-outline-variant/30') + '">';
+                    tagHtml += '<span class="material-symbols-outlined text-[12px]">schedule</span> ' + escapeHtml(formatDate(task.due_date)) + '</span>';
+                }
+                tagHtml += '</div>';
+            }
+            return tagHtml;
+        }
+
+        function createTaskElement(task) {
+            const card = document.createElement('div');
+            card.className = "task-card bg-surface-container-lowest p-4 rounded-xl card-shadow border border-outline-variant/60 cursor-grab active:cursor-grabbing hover:border-primary transition-colors flex flex-col gap-2";
+            card.dataset.id = task.id;
+
+            const tagHtml = createTaskTagsHtml(task);
+
+            card.innerHTML = tagHtml +
+                '<div class="flex justify-between items-start gap-2">' +
+                '<h4 class="font-bold text-sm leading-tight text-on-surface">' + escapeHtml(task.title) + '</h4>' +
+                '<div class="flex gap-1 shrink-0">' +
+                '<button onclick="editTask(' + task.id + ')" title="Edit" class="p-1 rounded hover:bg-surface-variant text-on-surface-variant hover:text-primary transition-colors">' +
+                '<span class="material-symbols-outlined text-[18px]">edit</span>' +
+                '</button>' +
+                '<button onclick="deleteTask(' + task.id + ')" title="Delete" class="p-1 rounded hover:bg-red-50 text-on-surface-variant hover:text-error transition-colors">' +
+                '<span class="material-symbols-outlined text-[18px]">delete</span>' +
+                '</button>' +
+                '</div>' +
+                '</div>' +
+                (task.description ? '<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">' + escapeHtml(task.description) + '</p>' : '');
+            return card;
+        }
+
         function renderTasks() {
             const cols = {
                 todo: document.getElementById('col-todo'),
@@ -338,43 +384,7 @@
                 const col = cols[task.status] || cols.todo;
                 counts[task.status] = (counts[task.status] || 0) + 1;
 
-                const card = document.createElement('div');
-                card.className = "task-card bg-surface-container-lowest p-4 rounded-xl card-shadow border border-outline-variant/60 cursor-grab active:cursor-grabbing hover:border-primary transition-colors flex flex-col gap-2";
-                card.dataset.id = task.id;
-
-                let tagHtml = '';
-                if (task.category || task.due_date) {
-                    tagHtml = '<div class="flex items-center gap-1.5 mb-0.5 flex-wrap">';
-                    if (task.category) {
-                        const catInfo = getCategoryInfo(task.category);
-                        tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase border ' + catInfo.colorClass + ' flex items-center gap-1">' + 
-                            '<span>' + catInfo.emoji + '</span> ' + escapeHtml(task.category) + '</span>';
-                    }
-                    if (task.due_date) {
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        const cleanDate = task.due_date.split('T')[0];
-                        const dueDate = new Date(cleanDate + 'T00:00:00');
-                        const isOverdue = dueDate < today && task.status !== 'done';
-                        tagHtml += '<span class="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase flex items-center gap-1 border ' + (isOverdue ? 'bg-red-100 text-red-800 border-red-200' : 'bg-surface-variant text-on-surface-variant border-outline-variant/30') + '">';
-                        tagHtml += '<span class="material-symbols-outlined text-[12px]">schedule</span> ' + escapeHtml(formatDate(task.due_date)) + '</span>';
-                    }
-                    tagHtml += '</div>';
-                }
-
-                card.innerHTML = tagHtml +
-                    '<div class="flex justify-between items-start gap-2">' +
-                    '<h4 class="font-bold text-sm leading-tight text-on-surface">' + escapeHtml(task.title) + '</h4>' +
-                    '<div class="flex gap-1 shrink-0">' +
-                    '<button onclick="editTask(' + task.id + ')" title="Edit" class="p-1 rounded hover:bg-surface-variant text-on-surface-variant hover:text-primary transition-colors">' +
-                    '<span class="material-symbols-outlined text-[18px]">edit</span>' +
-                    '</button>' +
-                    '<button onclick="deleteTask(' + task.id + ')" title="Delete" class="p-1 rounded hover:bg-red-50 text-on-surface-variant hover:text-error transition-colors">' +
-                    '<span class="material-symbols-outlined text-[18px]">delete</span>' +
-                    '</button>' +
-                    '</div>' +
-                    '</div>' +
-                    (task.description ? '<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">' + escapeHtml(task.description) + '</p>' : '');
+                const card = createTaskElement(task);
                 col.appendChild(card);
             });
 
