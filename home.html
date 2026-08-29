@@ -7,6 +7,7 @@
     <title>FlowBoard - Board</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="api.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -260,10 +261,9 @@
 
         let tasks = [];
 
-        async function fetchTasks() {
+        async function loadTasks() {
             try {
-                const res = await fetch('/api/tasks?userId=' + user.id);
-                tasks = await res.json();
+                tasks = await fetchUserTasks(user.id);
                 renderTasks();
             } catch (err) {
                 console.error(err);
@@ -523,7 +523,7 @@
                 }
                 if (res.ok) {
                     closeModal();
-                    fetchTasks();
+                    loadTasks();
                 } else {
                     const data = await res.json();
                     alert('Error: ' + (data.error || 'Failed to save task.'));
@@ -540,7 +540,7 @@
         }
 
         if (user) {
-            fetchTasks().then(initSortable);
+            loadTasks().then(initSortable);
         }
     </script>
 </body>

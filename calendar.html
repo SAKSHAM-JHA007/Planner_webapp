@@ -7,6 +7,7 @@
     <title>FlowBoard - Calendar & Important Dates</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="api.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet">
     <script id="tailwind-config">
@@ -496,10 +497,9 @@
         let currentFilter = 'all';
         let selectedTaskForDetails = null;
 
-        async function fetchTasks() {
+        async function loadTasks() {
             try {
-                const res = await fetch('/api/tasks?userId=' + user.id);
-                tasks = await res.json();
+                tasks = await fetchUserTasks(user.id);
                 renderCalendar();
                 renderUpcomingRibbon();
             } catch (err) {
@@ -879,7 +879,7 @@
                 const res = await fetch('/api/tasks/' + id + '?userId=' + user.id, { method: 'DELETE' });
                 if (res.ok) {
                     closeAddEditModal();
-                    fetchTasks();
+                    loadTasks();
                 } else {
                     alert('Failed to delete item.');
                 }
@@ -918,7 +918,7 @@
                 }
                 if (res.ok) {
                     closeAddEditModal();
-                    fetchTasks();
+                    loadTasks();
                 } else {
                     const data = await res.json();
                     alert('Error: ' + (data.error || 'Failed to save event.'));
@@ -989,7 +989,7 @@
                 if (res.ok) {
                     selectedTaskForDetails.status = newStatus;
                     closeDetailsModal();
-                    fetchTasks();
+                    loadTasks();
                 }
             } catch (err) {
                 console.error(err);
@@ -1003,7 +1003,7 @@
                 const res = await fetch('/api/tasks/' + selectedTaskForDetails.id + '?userId=' + user.id, { method: 'DELETE' });
                 if (res.ok) {
                     closeDetailsModal();
-                    fetchTasks();
+                    loadTasks();
                 } else {
                     alert('Failed to delete item.');
                 }
@@ -1102,7 +1102,7 @@
                     body: JSON.stringify({ status: newStatus, userId: user.id })
                 });
                 if (res.ok) {
-                    await fetchTasks();
+                    await loadTasks();
                     const updatedTasks = tasks.filter(t => t.due_date === dateStr);
                     if (updatedTasks.length > 0) {
                         showDayOverview(dateStr, updatedTasks);
@@ -1120,7 +1120,7 @@
             try {
                 const res = await fetch('/api/tasks/' + taskId + '?userId=' + user.id, { method: 'DELETE' });
                 if (res.ok) {
-                    await fetchTasks();
+                    await loadTasks();
                     const remainingTasks = tasks.filter(t => t.due_date === dateStr);
                     if (remainingTasks.length > 0) {
                         showDayOverview(dateStr, remainingTasks);
@@ -1156,7 +1156,7 @@
         }
 
         if (user) {
-            fetchTasks();
+            loadTasks();
         }
     </script>
 </body>
