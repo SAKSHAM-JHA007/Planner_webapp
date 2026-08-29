@@ -195,6 +195,7 @@ class ServerlessDB {
             board_elements: 0,
             board_connections: 0
         };
+        this.saveTimeout = null;
         this.load();
     }
 
@@ -214,7 +215,14 @@ class ServerlessDB {
     save() {
         try {
             if (this.storagePath) {
-                fs.writeFileSync(this.storagePath, JSON.stringify({ data: this.data, counters: this.counters }), 'utf8');
+                if (this.saveTimeout) {
+                    clearTimeout(this.saveTimeout);
+                }
+                this.saveTimeout = setTimeout(() => {
+                    fs.writeFile(this.storagePath, JSON.stringify({ data: this.data, counters: this.counters }), 'utf8', (err) => {
+                        if (err) console.error('Error writing fallback storage:', err);
+                    });
+                }, 50);
             }
         } catch (e) {
             // Ignore write errors in read-only environment
