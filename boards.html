@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet">
+    <script src="auth.js"></script>
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -511,11 +512,6 @@
                 console.error(err);
                 alert('Something went wrong.');
             }
-        }
-
-        function logout() {
-            localStorage.removeItem('user');
-            window.location.href = 'login.html';
         }
 
         initPickers();

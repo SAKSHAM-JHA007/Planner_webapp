@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="auth.js"></script>
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -533,11 +534,6 @@
                 alert('Something went wrong while saving task.');
             }
         });
-
-        function logout() {
-            localStorage.removeItem('user');
-            window.location.href = 'login.html';
-        }
 
         if (user) {
             fetchTasks().then(initSortable);
