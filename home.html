@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="utils.js"></script>
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -304,16 +305,6 @@
             const cleanDate = dateStr.split('T')[0];
             const options = { month: 'short', day: 'numeric' };
             return new Date(cleanDate + 'T00:00:00').toLocaleDateString(undefined, options);
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
         }
 
         function selectHomeCategory(categoryName, btn) {
