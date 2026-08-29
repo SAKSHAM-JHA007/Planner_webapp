@@ -752,8 +752,12 @@ app.get('/api/boards', (req, res) => {
 });
 
 app.post('/api/boards', (req, res) => {
-    const { userId, title, description, icon, color } = req.body;
-    if (!userId || !title) return res.status(400).json({ error: 'userId and title are required.' });
+    const userId = req.headers['user-id'] || 1;
+    const { title, description, icon, color } = req.body;
+
+    if (!title) {
+        return res.status(400).json({ error: 'Board title is required' });
+    }
 
     db.run(
         'INSERT INTO boards (user_id, title, description, icon, color) VALUES (?, ?, ?, ?, ?)',
