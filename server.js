@@ -57,8 +57,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Serve static uploads
 app.use('/uploads', express.static(uploadsDir));
-// Serve static files from current directory
-app.use(express.static(__dirname));
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -68,47 +68,47 @@ const authLimiter = rateLimit({
 
 // Navigation Route Aliases
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'home.html'));
+    res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
 
 app.get('/index.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'home.html'));
+    res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
 
 app.get('/home', (req, res) => {
-    res.sendFile(path.join(__dirname, 'home.html'));
+    res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
 
 app.get('/kanban', (req, res) => {
-    res.sendFile(path.join(__dirname, 'home.html'));
+    res.sendFile(path.join(__dirname, 'public', 'home.html'));
 });
 
 app.get('/my-boards', (req, res) => {
-    res.sendFile(path.join(__dirname, 'boards.html'));
+    res.sendFile(path.join(__dirname, 'public', 'boards.html'));
 });
 
 app.get('/boards', (req, res) => {
-    res.sendFile(path.join(__dirname, 'boards.html'));
+    res.sendFile(path.join(__dirname, 'public', 'boards.html'));
 });
 
 app.get('/board', (req, res) => {
-    res.sendFile(path.join(__dirname, 'board.html'));
+    res.sendFile(path.join(__dirname, 'public', 'board.html'));
 });
 
 app.get('/canvas', (req, res) => {
-    res.sendFile(path.join(__dirname, 'board.html'));
+    res.sendFile(path.join(__dirname, 'public', 'board.html'));
 });
 
 app.get('/calendar', (req, res) => {
-    res.sendFile(path.join(__dirname, 'calendar.html'));
+    res.sendFile(path.join(__dirname, 'public', 'calendar.html'));
 });
 
 app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'login.html'));
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 app.get('/signup', (req, res) => {
-    res.sendFile(path.join(__dirname, 'signup.html'));
+    res.sendFile(path.join(__dirname, 'public', 'signup.html'));
 });
 
 // Embedded SQL Schema to guarantee initialization on serverless environments without depending on disk files
