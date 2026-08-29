@@ -176,6 +176,11 @@ CREATE TABLE IF NOT EXISTS board_connections (
     FOREIGN KEY(from_id) REFERENCES board_elements(id) ON DELETE CASCADE,
     FOREIGN KEY(to_id) REFERENCES board_elements(id) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_boards_user_id ON boards(user_id);
+CREATE INDEX IF NOT EXISTS idx_board_elements_board_id ON board_elements(board_id);
+CREATE INDEX IF NOT EXISTS idx_board_connections_board_id ON board_connections(board_id);
 `;
 
 class ServerlessDB {
