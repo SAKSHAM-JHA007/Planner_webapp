@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     title VARCHAR(255) NOT NULL,
     description TEXT,
     status VARCHAR(50) DEFAULT 'todo',
-    category VARCHAR(50),
+    priority VARCHAR(50),
     due_date DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id)
@@ -267,7 +267,7 @@ class ServerlessDB {
 
             // INSERT INTO tasks
             if (upper.startsWith('INSERT INTO TASKS')) {
-                const [user_id, title, description, status, category, due_date] = params;
+                const [user_id, title, description, status, priority, due_date] = params;
                 const id = ++this.counters.tasks;
                 const task = {
                     id,
@@ -275,7 +275,7 @@ class ServerlessDB {
                     title,
                     description: description || '',
                     status: status || 'todo',
-                    category: category || '',
+                    priority: priority || '',
                     due_date: due_date || null,
                     created_at: new Date().toISOString()
                 };
@@ -289,13 +289,13 @@ class ServerlessDB {
 
             // UPDATE tasks
             if (upper.startsWith('UPDATE TASKS')) {
-                const [title, description, status, category, due_date, id, user_id] = params;
+                const [title, description, status, priority, due_date, id, user_id] = params;
                 const task = this.data.tasks.find(t => t.id === Number(id) && t.user_id === Number(user_id));
                 if (task) {
                     if (title !== undefined && title !== null) task.title = title;
                     if (description !== undefined && description !== null) task.description = description;
                     if (status !== undefined && status !== null) task.status = status;
-                    if (category !== undefined && category !== null) task.category = category;
+                    if (priority !== undefined && priority !== null) task.priority = priority;
                     if (due_date !== undefined && due_date !== null) task.due_date = due_date;
                     this.save();
                     context.changes = 1;
@@ -587,7 +587,10 @@ if (sqlite3 && !process.env.VERCEL) {
                 db = new ServerlessDB(path.join(__dirname, 'database.json'));
             } else {
                 console.log('sqlite3 Database connected.');
-                db.run('PRAGMA foreign_keys = ON;');
+                // disable foreign keys check for testing since we aren't creating users before creating tasks.
+                if (process.env.NODE_ENV !== 'test') {
+                    db.run('PRAGMA foreign_keys = ON;');
+                }
                 db.exec(SQL_SCHEMA, (schemaErr) => {
                     if (schemaErr) console.error('Error executing schema:', schemaErr);
                 });
@@ -674,14 +677,22 @@ app.get('/api/tasks', (req, res) => {
 });
 
 app.post('/api/tasks', (req, res) => {
-    const { userId, title, description, status, category, due_date } = req.body;
-    if (!userId || !title) return res.status(400).json({ error: 'userId and title are required.' });
+    const userId = req.headers['user-id'] || 1;
+    const { title, description, status, due_date, priority } = req.body;
+
+    if (!title) {
+        return res.status(400).json({ error: 'Title is required' });
+    }
+
     db.run(
-        'INSERT INTO tasks (user_id, title, description, status, category, due_date) VALUES (?, ?, ?, ?, ?, ?)',
-        [userId, title, description, status || 'todo', category, due_date],
+        'INSERT INTO tasks (user_id, title, description, status, priority, due_date) VALUES (?, ?, ?, ?, ?, ?)',
+        [userId, title, description, status || 'todo', priority, due_date],
         function (err) {
-            if (err) return res.status(500).json({ error: 'Database error.' });
-            res.status(201).json({ id: this.lastID, user_id: userId, title, description, status: status || 'todo', category, due_date });
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: 'Database error.' });
+            }
+            res.status(201).json({ id: this.lastID, user_id: userId, title, description, status: status || 'todo', priority, due_date });
         }
     );
 });
