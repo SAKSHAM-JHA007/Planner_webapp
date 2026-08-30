@@ -195,19 +195,28 @@ class ServerlessDB {
             board_elements: 0,
             board_connections: 0
         };
-        this.load();
+        this.loaded = false;
+        this.loadPromise = this.load();
     }
 
-    load() {
+    async load() {
+        if (!this.storagePath) {
+            this.loaded = true;
+            return;
+        }
+
         try {
-            if (this.storagePath && fs.existsSync(this.storagePath)) {
-                const raw = fs.readFileSync(this.storagePath, 'utf8');
-                const parsed = JSON.parse(raw);
-                if (parsed.data) this.data = parsed.data;
-                if (parsed.counters) this.counters = parsed.counters;
+            const raw = await fs.promises.readFile(this.storagePath, 'utf8');
+            const parsed = JSON.parse(raw);
+            if (parsed.data) this.data = parsed.data;
+            if (parsed.counters) this.counters = parsed.counters;
+        } catch (err) {
+            // Ignore ENOENT (file not found) as it just means an empty DB
+            if (err.code !== 'ENOENT') {
+                console.error('Error reading fallback storage:', err);
             }
-        } catch (e) {
-            console.error('Error loading fallback storage:', e);
+        } finally {
+            this.loaded = true;
         }
     }
 
@@ -222,10 +231,18 @@ class ServerlessDB {
     }
 
     serialize(fn) {
+        if (!this.loaded) {
+            this.loadPromise.then(() => this.serialize(fn));
+            return;
+        }
         if (fn) fn();
     }
 
     exec(sql, cb) {
+        if (!this.loaded) {
+            this.loadPromise.then(() => this.exec(sql, cb));
+            return;
+        }
         if (cb) cb(null);
     }
 
@@ -235,6 +252,11 @@ class ServerlessDB {
             params = [];
         }
         params = params || [];
+
+        if (!this.loaded) {
+            this.loadPromise.then(() => this.run(sql, params, cb));
+            return;
+        }
         const context = { lastID: 0, changes: 0 };
 
         try {
@@ -484,6 +506,11 @@ class ServerlessDB {
         }
         params = params || [];
 
+        if (!this.loaded) {
+            this.loadPromise.then(() => this.get(sql, params, cb));
+            return;
+        }
+
         try {
             const upper = (sql || '').trim().toUpperCase();
 
@@ -516,6 +543,11 @@ class ServerlessDB {
             params = [];
         }
         params = params || [];
+
+        if (!this.loaded) {
+            this.loadPromise.then(() => this.all(sql, params, cb));
+            return;
+        }
 
         try {
             const upper = (sql || '').trim().toUpperCase();
