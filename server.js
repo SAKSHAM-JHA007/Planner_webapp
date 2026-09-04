@@ -67,49 +67,17 @@ const authLimiter = rateLimit({
 });
 
 // Navigation Route Aliases
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'home.html'));
-});
-
-app.get('/index.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'home.html'));
-});
-
-app.get('/home', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'home.html'));
-});
-
-app.get('/kanban', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'home.html'));
-});
-
-app.get('/my-boards', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'boards.html'));
-});
-
-app.get('/boards', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'boards.html'));
-});
-
-app.get('/board', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'board.html'));
-});
-
-app.get('/canvas', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'board.html'));
-});
-
-app.get('/calendar', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'calendar.html'));
-});
-
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
-app.get('/signup', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'signup.html'));
-});
+const PAGE_ROUTES = {
+    '/': 'home.html', '/index.html': 'home.html', '/home': 'home.html', '/kanban': 'home.html',
+    '/boards': 'boards.html', '/my-boards': 'boards.html',
+    '/board': 'board.html', '/canvas': 'board.html',
+    '/calendar': 'calendar.html',
+    '/login': 'login.html',
+    '/signup': 'signup.html'
+};
+for (const [route, file] of Object.entries(PAGE_ROUTES)) {
+    app.get(route, (req, res) => res.sendFile(path.join(__dirname, 'public', file)));
+}
 
 // Embedded SQL Schema to guarantee initialization on serverless environments without depending on disk files
 const SQL_SCHEMA = `
@@ -616,10 +584,12 @@ if (sqlite3 && !process.env.VERCEL) {
                 console.error('Error opening sqlite3 database, switching to ServerlessDB fallback:', err);
                 db = new ServerlessDB(path.join(__dirname, 'database.json'));
             } else {
-                console.log('sqlite3 Database connected.');
-                db.run('PRAGMA foreign_keys = OFF;');
-                db.exec(SQL_SCHEMA, (schemaErr) => {
-                    if (schemaErr) console.error('Error executing schema:', schemaErr);
+                db.serialize(() => {
+                    db.run('PRAGMA foreign_keys = OFF;');
+                    db.exec(SQL_SCHEMA, (schemaErr) => {
+                        if (schemaErr) console.error('Error executing schema:', schemaErr);
+                    });
+                    db.run('ALTER TABLE tasks ADD COLUMN priority VARCHAR(50);', () => {});
                 });
             }
         });

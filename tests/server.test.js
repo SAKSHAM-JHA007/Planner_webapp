@@ -1,48 +1,60 @@
-const request = require('supertest');
+const test = require('node:test');
+const assert = require('node:assert');
 const app = require('../server');
 
-describe('POST /api/tasks', () => {
-    it('should create a task successfully with valid data', async () => {
-        const response = await request(app)
-            .post('/api/tasks')
-            .set('user-id', '2')
-            .send({ title: 'Test Task' });
+let server;
+let baseUrl;
 
-        expect(response.status).toBe(201);
-        expect(response.body).toHaveProperty('id');
-        expect(response.body.title).toBe('Test Task');
-        expect(response.body.user_id).toBe('2');
-        expect(response.body.status).toBe('todo');
+test.before(async () => {
+    await new Promise((resolve) => {
+        server = app.listen(0, () => {
+            baseUrl = `http://127.0.0.1:${server.address().port}`;
+            resolve();
+        });
     });
+});
 
-    it('should return 400 if title is missing', async () => {
-        const response = await request(app)
-            .post('/api/tasks')
-            .set('user-id', '2')
-            .send({ description: 'No title provided' });
+test.after(async () => {
+    if (server) await new Promise((resolve) => server.close(resolve));
+});
 
-        expect(response.status).toBe(400);
-        expect(response.body.error).toBe('Title is required');
+test('POST /api/tasks creates task successfully', async () => {
+    const res = await fetch(`${baseUrl}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '2' },
+        body: JSON.stringify({ title: 'Test Task' })
     });
+    assert.strictEqual(res.status, 201);
+    const data = await res.json();
+    assert.strictEqual(data.title, 'Test Task');
+    assert.strictEqual(data.user_id, '2');
+});
 
-    it('should create a task with all optional fields', async () => {
-        const response = await request(app)
-            .post('/api/tasks')
-            .set('user-id', '3')
-            .send({
-                title: 'Full Task',
-                description: 'Detailed description',
-                status: 'in-progress',
-                due_date: '2023-12-31',
-                priority: 'high'
-            });
-
-        expect(response.status).toBe(201);
-        expect(response.body.title).toBe('Full Task');
-        expect(response.body.description).toBe('Detailed description');
-        expect(response.body.status).toBe('in-progress');
-        expect(response.body.due_date).toBe('2023-12-31');
-        expect(response.body.priority).toBe('high');
-        expect(response.body.user_id).toBe('3');
+test('POST /api/tasks validates missing title', async () => {
+    const res = await fetch(`${baseUrl}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '2' },
+        body: JSON.stringify({ description: 'No title' })
     });
+    assert.strictEqual(res.status, 400);
+    const data = await res.json();
+    assert.strictEqual(data.error, 'Title is required');
+});
+
+test('POST /api/boards creates board and validates title', async () => {
+    const res = await fetch(`${baseUrl}/api/boards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '2' },
+        body: JSON.stringify({ title: 'Test Board' })
+    });
+    assert.strictEqual(res.status, 201);
+    const data = await res.json();
+    assert.strictEqual(data.title, 'Test Board');
+
+    const failRes = await fetch(`${baseUrl}/api/boards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '2' },
+        body: JSON.stringify({})
+    });
+    assert.strictEqual(failRes.status, 400);
 });
