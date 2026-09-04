@@ -123,25 +123,23 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
+    user_id VARCHAR(255),
     title VARCHAR(255) NOT NULL,
     description TEXT,
     status VARCHAR(50) DEFAULT 'todo',
     priority VARCHAR(50),
     due_date DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS boards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     icon VARCHAR(50) DEFAULT 'dashboard',
     color VARCHAR(50) DEFAULT '#a04100',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS board_elements (
@@ -293,7 +291,7 @@ class ServerlessDB {
                 const id = ++this.counters.tasks;
                 const task = {
                     id,
-                    user_id: Number(user_id),
+                    user_id: user_id ? String(user_id) : user_id,
                     title,
                     description: description || '',
                     status: status || 'todo',
@@ -312,7 +310,7 @@ class ServerlessDB {
             // UPDATE tasks
             if (upper.startsWith('UPDATE TASKS')) {
                 const [title, description, status, priority, due_date, id, user_id] = params;
-                const task = this.data.tasks.find(t => t.id === Number(id) && t.user_id === Number(user_id));
+                const task = this.data.tasks.find(t => t.id === Number(id) && String(t.user_id) === String(user_id));
                 if (task) {
                     if (title !== undefined && title !== null) task.title = title;
                     if (description !== undefined && description !== null) task.description = description;
@@ -330,7 +328,7 @@ class ServerlessDB {
             if (upper.startsWith('DELETE FROM TASKS')) {
                 const [id, user_id] = params;
                 const initialLen = this.data.tasks.length;
-                this.data.tasks = this.data.tasks.filter(t => !(t.id === Number(id) && t.user_id === Number(user_id)));
+                this.data.tasks = this.data.tasks.filter(t => !(t.id === Number(id) && String(t.user_id) === String(user_id)));
                 context.changes = initialLen - this.data.tasks.length;
                 this.save();
                 if (cb) cb.call(context, null);
@@ -343,7 +341,7 @@ class ServerlessDB {
                 const id = ++this.counters.boards;
                 const board = {
                     id,
-                    user_id: Number(user_id),
+                    user_id: user_id ? String(user_id) : user_id,
                     title,
                     description: description || '',
                     icon: icon || 'dashboard',
@@ -361,7 +359,7 @@ class ServerlessDB {
             // UPDATE boards
             if (upper.startsWith('UPDATE BOARDS')) {
                 const [title, description, icon, color, id, user_id] = params;
-                const board = this.data.boards.find(b => b.id === Number(id) && b.user_id === Number(user_id));
+                const board = this.data.boards.find(b => b.id === Number(id) && String(b.user_id) === String(user_id));
                 if (board) {
                     if (title !== undefined && title !== null) board.title = title;
                     if (description !== undefined && description !== null) board.description = description;
@@ -525,7 +523,7 @@ class ServerlessDB {
             // SELECT * FROM boards WHERE id = ? AND user_id = ?
             if (upper.includes('FROM BOARDS WHERE ID = ? AND USER_ID = ?')) {
                 const [id, user_id] = params;
-                const board = this.data.boards.find(b => b.id === Number(id) && b.user_id === Number(user_id)) || null;
+                const board = this.data.boards.find(b => b.id === Number(id) && String(b.user_id) === String(user_id)) || null;
                 if (cb) cb(null, board);
                 return;
             }
@@ -556,7 +554,7 @@ class ServerlessDB {
             if (upper.includes('FROM TASKS WHERE USER_ID = ?')) {
                 const [user_id] = params;
                 const rows = this.data.tasks
-                    .filter(t => t.user_id === Number(user_id))
+                    .filter(t => String(t.user_id) === String(user_id))
                     .sort((a, b) => a.id - b.id);
                 if (cb) cb(null, rows);
                 return;
@@ -566,7 +564,7 @@ class ServerlessDB {
             if (upper.includes('FROM BOARDS') && upper.includes('USER_ID = ?')) {
                 const [user_id] = params;
                 const rows = this.data.boards
-                    .filter(b => b.user_id === Number(user_id))
+                    .filter(b => String(b.user_id) === String(user_id))
                     .map(b => ({
                         ...b,
                         element_count: this.data.board_elements.filter(e => e.board_id === b.id).length,
@@ -619,10 +617,7 @@ if (sqlite3 && !process.env.VERCEL) {
                 db = new ServerlessDB(path.join(__dirname, 'database.json'));
             } else {
                 console.log('sqlite3 Database connected.');
-                // disable foreign keys check for testing since we aren't creating users before creating tasks.
-                if (process.env.NODE_ENV !== 'test') {
-                    db.run('PRAGMA foreign_keys = ON;');
-                }
+                db.run('PRAGMA foreign_keys = OFF;');
                 db.exec(SQL_SCHEMA, (schemaErr) => {
                     if (schemaErr) console.error('Error executing schema:', schemaErr);
                 });

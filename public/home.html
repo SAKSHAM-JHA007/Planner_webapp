@@ -6,6 +6,11 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>FlowBoard - Board</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Supabase JS & Auth Services -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="supabase-auth.js"></script>
+    <script src="supabase-ui.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet">
@@ -251,14 +256,26 @@
     </nav>
 
     <script>
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (!user) {
-            window.location.href = 'login.html';
-        } else {
-            document.getElementById('user-greeting').textContent = 'Hello, ' + user.name;
-        }
-
+        let user = null;
         let tasks = [];
+
+        async function initPage() {
+            if (window.FlowAuth) {
+                user = await window.FlowAuth.checkAuth(true);
+            } else {
+                user = JSON.parse(localStorage.getItem('user'));
+                if (!user) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+            }
+
+            if (user) {
+                const displayName = user.name || (user.email ? user.email.split('@')[0] : 'User');
+                document.getElementById('user-greeting').textContent = 'Hello, ' + displayName;
+                fetchTasks().then(initSortable);
+            }
+        }
 
         async function fetchTasks() {
             try {
@@ -534,14 +551,16 @@
             }
         });
 
-        function logout() {
-            localStorage.removeItem('user');
-            window.location.href = 'login.html';
+        async function logout() {
+            if (window.FlowAuth) {
+                await window.FlowAuth.signOutUser();
+            } else {
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            }
         }
 
-        if (user) {
-            fetchTasks().then(initSortable);
-        }
+        initPage();
     </script>
 </body>
 
