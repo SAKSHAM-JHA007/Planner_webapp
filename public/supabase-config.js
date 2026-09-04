@@ -86,6 +86,24 @@
         }
     }
 
+    // Auto-fetch environment config from server if not already stored locally (supports Vercel environment variables)
+    if (typeof window !== 'undefined' && typeof fetch === 'function') {
+        const stored = getStoredConfig();
+        if (!stored.url || !stored.anonKey) {
+            fetch('/api/config')
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (data && data.supabaseUrl && data.supabaseAnonKey) {
+                        window.ENV_SUPABASE_URL = data.supabaseUrl;
+                        window.ENV_SUPABASE_ANON_KEY = data.supabaseAnonKey;
+                        initSupabase();
+                        window.dispatchEvent(new CustomEvent('supabase-config-loaded'));
+                    }
+                })
+                .catch(() => {});
+        }
+    }
+
     return {
         getConfig: getStoredConfig,
         sanitizeUrl: sanitizeUrl,

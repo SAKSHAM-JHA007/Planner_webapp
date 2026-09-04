@@ -79,6 +79,14 @@ for (const [route, file] of Object.entries(PAGE_ROUTES)) {
     app.get(route, (req, res) => res.sendFile(path.join(__dirname, 'public', file)));
 }
 
+// Expose public environment config for serverless deployments (e.g. Vercel)
+app.get('/api/config', (req, res) => {
+    res.json({
+        supabaseUrl: process.env.SUPABASE_URL || '',
+        supabaseAnonKey: process.env.SUPABASE_ANON_KEY || ''
+    });
+});
+
 // Embedded SQL Schema to guarantee initialization on serverless environments without depending on disk files
 const SQL_SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
