@@ -196,13 +196,21 @@ class ServerlessDB {
     }
 
     save() {
-        try {
-            if (this.storagePath) {
-                fs.writeFileSync(this.storagePath, JSON.stringify({ data: this.data, counters: this.counters }), 'utf8');
-            }
-        } catch (e) {
-            // Ignore write errors in read-only environment
+        if (!this.storagePath) return;
+        if (this.saving) {
+            this.savePending = true;
+            return;
         }
+        this.saving = true;
+        this.savePending = false;
+        fs.promises.writeFile(this.storagePath, JSON.stringify({ data: this.data, counters: this.counters }), 'utf8')
+            .catch(() => {})
+            .finally(() => {
+                this.saving = false;
+                if (this.savePending) {
+                    this.save();
+                }
+            });
     }
 
     serialize(fn) {
@@ -1064,3 +1072,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.ServerlessDB = ServerlessDB;
