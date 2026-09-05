@@ -127,5 +127,44 @@ test('GET /api/users/export serves downloadable users.txt', async () => {
     assert.ok(text.includes('FLOWBOARD - REGISTERED USERS DATA'));
 });
 
+test('POST /api/boards/:id/connections requires authorization and ownership', async () => {
+    // 1. Create a board for User 5
+    const boardRes = await fetch(`${baseUrl}/api/boards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '5' },
+        body: JSON.stringify({ title: 'User 5 Board' })
+    });
+    assert.strictEqual(boardRes.status, 201);
+    const board = await boardRes.json();
+
+    // 2. Attempt connection creation without userId -> should return 403 Forbidden
+    const unauthRes = await fetch(`${baseUrl}/api/boards/${board.id}/connections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from_id: 1, to_id: 2 })
+    });
+    assert.strictEqual(unauthRes.status, 403);
+
+    // 3. Attempt connection creation with wrong userId (e.g. User 99) -> should return 404 Not Found
+    const wrongUserRes = await fetch(`${baseUrl}/api/boards/${board.id}/connections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '99' },
+        body: JSON.stringify({ from_id: 1, to_id: 2 })
+    });
+    assert.strictEqual(wrongUserRes.status, 404);
+
+    // 4. Attempt connection creation with correct userId (User 5) -> should return 201 Created
+    const validRes = await fetch(`${baseUrl}/api/boards/${board.id}/connections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '5' },
+        body: JSON.stringify({ from_id: 1, to_id: 2, style: 'dashed', label: 'Test Link' })
+    });
+    assert.strictEqual(validRes.status, 201);
+    const connData = await validRes.json();
+    assert.strictEqual(connData.board_id, board.id);
+    assert.strictEqual(connData.from_id, 1);
+    assert.strictEqual(connData.to_id, 2);
+    assert.strictEqual(connData.style, 'dashed');
+});
 
 

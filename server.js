@@ -1019,31 +1019,40 @@ app.delete('/api/boards/:id/elements/:elementId', (req, res) => {
 // ----------------------------------------------------
 app.post('/api/boards/:id/connections', (req, res) => {
     const boardId = req.params.id;
+    const userId = req.headers['user-id'] || (req.body && req.body.userId) || req.query.userId;
+    if (!userId) return res.status(403).json({ error: 'Unauthorized: userId required.' });
+
     const { from_id, to_id, style, label, color } = req.body;
 
     if (!from_id || !to_id) {
         return res.status(400).json({ error: 'from_id and to_id are required.' });
     }
 
-    db.run(
-        'INSERT INTO board_connections (board_id, from_id, to_id, style, label, color) VALUES (?, ?, ?, ?, ?, ?)',
-        [boardId, from_id, to_id, style || 'dotted', label || '', color || '#8e7164'],
-        function (err) {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ error: 'Database error creating connection.' });
+    // Verify ownership of the board
+    db.get('SELECT * FROM boards WHERE id = ? AND user_id = ?', [boardId, userId], (err, board) => {
+        if (err) return res.status(500).json({ error: 'Database error.' });
+        if (!board) return res.status(404).json({ error: 'Board not found or unauthorized.' });
+
+        db.run(
+            'INSERT INTO board_connections (board_id, from_id, to_id, style, label, color) VALUES (?, ?, ?, ?, ?, ?)',
+            [boardId, from_id, to_id, style || 'dotted', label || '', color || '#8e7164'],
+            function (err) {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).json({ error: 'Database error creating connection.' });
+                }
+                res.status(201).json({
+                    id: this.lastID,
+                    board_id: Number(boardId),
+                    from_id: Number(from_id),
+                    to_id: Number(to_id),
+                    style: style || 'dotted',
+                    label: label || '',
+                    color: color || '#8e7164'
+                });
             }
-            res.status(201).json({
-                id: this.lastID,
-                board_id: Number(boardId),
-                from_id: Number(from_id),
-                to_id: Number(to_id),
-                style: style || 'dotted',
-                label: label || '',
-                color: color || '#8e7164'
-            });
-        }
-    );
+        );
+    });
 });
 
 app.delete('/api/boards/:id/connections/:connId', (req, res) => {
