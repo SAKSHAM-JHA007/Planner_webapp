@@ -928,52 +928,61 @@ app.delete('/api/boards/:id', (req, res) => {
 // ----------------------------------------------------
 app.post('/api/boards/:id/elements', (req, res) => {
     const boardId = req.params.id;
+    const userId = req.headers['user-id'] || req.query.userId || (req.body && req.body.userId);
+    if (!userId) return res.status(403).json({ error: 'Unauthorized: userId required.' });
+
     const { type, x, y, width, height, content, file_url, file_name, file_size, file_type, color, z_index } = req.body;
 
     if (!type) return res.status(400).json({ error: 'Element type is required.' });
 
-    db.run(
-        `INSERT INTO board_elements 
-        (board_id, type, x, y, width, height, content, file_url, file_name, file_size, file_type, color, z_index) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-            boardId,
-            type,
-            x !== undefined ? x : 100,
-            y !== undefined ? y : 100,
-            width !== undefined ? width : 260,
-            height !== undefined ? height : 180,
-            content || '',
-            file_url || null,
-            file_name || null,
-            file_size || null,
-            file_type || null,
-            color || '#ffffff',
-            z_index !== undefined ? z_index : 1
-        ],
-        function (err) {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ error: 'Database error creating element.' });
-            }
-            res.status(201).json({
-                id: this.lastID,
-                board_id: Number(boardId),
+    // Verify ownership
+    db.get('SELECT * FROM boards WHERE id = ? AND user_id = ?', [boardId, userId], (err, board) => {
+        if (err) return res.status(500).json({ error: 'Database error.' });
+        if (!board) return res.status(404).json({ error: 'Board not found or unauthorized.' });
+
+        db.run(
+            `INSERT INTO board_elements
+            (board_id, type, x, y, width, height, content, file_url, file_name, file_size, file_type, color, z_index)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                boardId,
                 type,
-                x: x !== undefined ? x : 100,
-                y: y !== undefined ? y : 100,
-                width: width !== undefined ? width : 260,
-                height: height !== undefined ? height : 180,
-                content: content || '',
-                file_url: file_url || null,
-                file_name: file_name || null,
-                file_size: file_size || null,
-                file_type: file_type || null,
-                color: color || '#ffffff',
-                z_index: z_index !== undefined ? z_index : 1
-            });
-        }
-    );
+                x !== undefined ? x : 100,
+                y !== undefined ? y : 100,
+                width !== undefined ? width : 260,
+                height !== undefined ? height : 180,
+                content || '',
+                file_url || null,
+                file_name || null,
+                file_size || null,
+                file_type || null,
+                color || '#ffffff',
+                z_index !== undefined ? z_index : 1
+            ],
+            function (err) {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).json({ error: 'Database error creating element.' });
+                }
+                res.status(201).json({
+                    id: this.lastID,
+                    board_id: Number(boardId),
+                    type,
+                    x: x !== undefined ? x : 100,
+                    y: y !== undefined ? y : 100,
+                    width: width !== undefined ? width : 260,
+                    height: height !== undefined ? height : 180,
+                    content: content || '',
+                    file_url: file_url || null,
+                    file_name: file_name || null,
+                    file_size: file_size || null,
+                    file_type: file_type || null,
+                    color: color || '#ffffff',
+                    z_index: z_index !== undefined ? z_index : 1
+                });
+            }
+        );
+    });
 });
 
 app.put('/api/boards/:id/elements/:elementId', (req, res) => {
