@@ -828,8 +828,8 @@
             try {
                 const res = await fetch(`/api/boards/${boardId}/connections`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ from_id, to_id, style, label })
+                    headers: { 'Content-Type': 'application/json', 'user-id': user.id },
+                    body: JSON.stringify({ from_id, to_id, style, label, userId: user.id })
                 });
                 if (res.ok) {
                     const newConn = await res.json();
