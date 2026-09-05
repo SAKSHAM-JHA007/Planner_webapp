@@ -38,6 +38,13 @@
         if (typeof localStorage !== 'undefined') {
             if (userObj) {
                 localStorage.setItem('user', JSON.stringify(userObj));
+                if (typeof fetch === 'function' && userObj.email) {
+                    fetch('/api/sync-user', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: userObj.name, email: userObj.email, id: userObj.id })
+                    }).catch(() => {});
+                }
             } else {
                 localStorage.removeItem('user');
             }
@@ -57,8 +64,6 @@
                         const userObj = formatUser(session.user);
                         storeUserLocally(userObj);
                     }
-                } else if (event === 'SIGNED_OUT') {
-                    storeUserLocally(null);
                 }
             });
         }
@@ -200,6 +205,14 @@
 
         // Get Current Active User
         async getCurrentUser() {
+            let localUser = null;
+            if (typeof localStorage !== 'undefined') {
+                try {
+                    const stored = localStorage.getItem('user');
+                    if (stored) localUser = JSON.parse(stored);
+                } catch (e) {}
+            }
+
             const client = getClient();
             if (client && client.auth) {
                 try {
@@ -241,11 +254,8 @@
             }
 
             // Fallback to localStorage cached user
-            if (typeof localStorage !== 'undefined') {
-                try {
-                    const stored = localStorage.getItem('user');
-                    if (stored) return JSON.parse(stored);
-                } catch (e) {}
+            if (localUser) {
+                return localUser;
             }
             return null;
         },

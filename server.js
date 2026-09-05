@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     description TEXT,
     status VARCHAR(50) DEFAULT 'todo',
     priority VARCHAR(50),
+    category VARCHAR(50),
     due_date DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -263,7 +264,7 @@ class ServerlessDB {
 
             // INSERT INTO tasks
             if (upper.startsWith('INSERT INTO TASKS')) {
-                const [user_id, title, description, status, priority, due_date] = params;
+                const [user_id, title, description, status, priority, category, due_date] = params;
                 const id = ++this.counters.tasks;
                 const task = {
                     id,
@@ -272,6 +273,7 @@ class ServerlessDB {
                     description: description || '',
                     status: status || 'todo',
                     priority: priority || '',
+                    category: category || 'Work',
                     due_date: due_date || null,
                     created_at: new Date().toISOString()
                 };
@@ -598,22 +600,86 @@ if (sqlite3 && !process.env.VERCEL) {
                         if (schemaErr) console.error('Error executing schema:', schemaErr);
                     });
                     db.run('ALTER TABLE tasks ADD COLUMN priority VARCHAR(50);', () => {});
+                    syncUsersFile();
                 });
             }
         });
     } catch (e) {
         db = new ServerlessDB(path.join(__dirname, 'database.json'));
+        syncUsersFile();
     }
 } else {
     // Vercel serverless environment: Zero-crash resilient serverless storage
     const fallbackPath = process.env.VERCEL ? path.join('/tmp', 'database.json') : path.join(__dirname, 'database.json');
     db = new ServerlessDB(fallbackPath);
+    syncUsersFile();
     console.log('Running on resilient ServerlessDB engine for cloud deployment.');
 }
 
 // ----------------------------------------------------
 // AUTHENTICATION APIs
 // ----------------------------------------------------
+function formatUsersTxt(rows) {
+    const header = [
+        '================================================================================',
+        'FLOWBOARD - REGISTERED USERS DATA',
+        `Export Date: ${new Date().toISOString().split('T')[0]}`,
+        `Total Users: ${rows.length}`,
+        '================================================================================\n'
+    ].join('\n');
+
+    const body = rows.map(u => [
+        `[User ID: ${u.id}]`,
+        `Full Name     : ${u.full_name}`,
+        `Email         : ${u.email}`,
+        `Registered At : ${u.created_at || 'N/A'}\n`,
+        '--------------------------------------------------------------------------------'
+    ].join('\n')).join('\n');
+
+    return `${header}${body}\n================================================================================\n`;
+}
+
+function syncUsersFile() {
+    if (!db || typeof db.all !== 'function') return;
+    db.all('SELECT id, full_name, email, created_at FROM users ORDER BY id ASC', (err, rows) => {
+        if (err || !rows) return;
+        const filePath = process.env.VERCEL ? path.join('/tmp', 'users.txt') : path.join(__dirname, 'users.txt');
+        fs.writeFile(filePath, formatUsersTxt(rows), () => {});
+    });
+}
+
+// Live export route: returns users.txt as a downloadable text file
+app.get('/api/users/export', (req, res) => {
+    db.all('SELECT id, full_name, email, created_at FROM users ORDER BY id ASC', (err, rows) => {
+        if (err) return res.status(500).send('Database error.');
+        const content = formatUsersTxt(rows || []);
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Content-Disposition', 'attachment; filename="users.txt"');
+        res.send(content);
+    });
+});
+
+// Auto-sync endpoint for recording external/Supabase/OAuth signins & signups
+app.post('/api/sync-user', (req, res) => {
+    const { name, email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required.' });
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = (name || cleanEmail.split('@')[0]).trim();
+
+    db.get('SELECT * FROM users WHERE email = ?', [cleanEmail], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Database error.' });
+        if (user) {
+            syncUsersFile();
+            return res.json({ message: 'User already recorded.', user: { id: user.id, name: user.full_name, email: user.email } });
+        }
+        db.run('INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)', [cleanName, cleanEmail, 'oauth_synced'], function (insertErr) {
+            if (insertErr) return res.status(500).json({ error: 'Failed to record user.' });
+            syncUsersFile();
+            res.status(201).json({ message: 'User recorded successfully!', user: { id: this ? this.lastID : null, name: cleanName, email: cleanEmail } });
+        });
+    });
+});
+
 app.post('/api/signup', authLimiter, async (req, res) => {
     const { name, email, password } = req.body;
 
@@ -634,6 +700,7 @@ app.post('/api/signup', authLimiter, async (req, res) => {
                 }
                 return res.status(500).json({ error: 'Database error.' });
             }
+            syncUsersFile();
             res.status(201).json({ message: 'User registered successfully!', userId: this.lastID });
         });
     } catch (err) {
@@ -682,22 +749,22 @@ app.get('/api/tasks', (req, res) => {
 });
 
 app.post('/api/tasks', (req, res) => {
-    const userId = req.headers['user-id'] || 1;
-    const { title, description, status, due_date, priority } = req.body;
+    const userId = req.body.userId || req.headers['user-id'] || 1;
+    const { title, description, status, due_date, priority, category } = req.body;
 
     if (!title) {
         return res.status(400).json({ error: 'Title is required' });
     }
 
     db.run(
-        'INSERT INTO tasks (user_id, title, description, status, priority, due_date) VALUES (?, ?, ?, ?, ?, ?)',
-        [userId, title, description, status || 'todo', priority, due_date],
+        'INSERT INTO tasks (user_id, title, description, status, priority, category, due_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [userId, title, description, status || 'todo', priority || '', category || 'Work', due_date],
         function (err) {
             if (err) {
                 console.error(err);
                 return res.status(500).json({ error: 'Database error.' });
             }
-            res.status(201).json({ id: this.lastID, user_id: userId, title, description, status: status || 'todo', priority, due_date });
+            res.status(201).json({ id: this.lastID, user_id: userId, title, description, status: status || 'todo', priority: priority || '', category: category || 'Work', due_date });
         }
     );
 });

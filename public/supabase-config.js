@@ -96,6 +96,10 @@
                     if (data && data.supabaseUrl && data.supabaseAnonKey) {
                         window.ENV_SUPABASE_URL = data.supabaseUrl;
                         window.ENV_SUPABASE_ANON_KEY = data.supabaseAnonKey;
+                        if (typeof localStorage !== 'undefined') {
+                            localStorage.setItem(STORAGE_URL_KEY, data.supabaseUrl);
+                            localStorage.setItem(STORAGE_KEY_KEY, data.supabaseAnonKey);
+                        }
                         initSupabase();
                         window.dispatchEvent(new CustomEvent('supabase-config-loaded'));
                     }
@@ -125,6 +129,10 @@
             if (typeof localStorage !== 'undefined') {
                 localStorage.removeItem(STORAGE_URL_KEY);
                 localStorage.removeItem(STORAGE_KEY_KEY);
+            }
+            if (typeof window !== 'undefined') {
+                window.ENV_SUPABASE_URL = '';
+                window.ENV_SUPABASE_ANON_KEY = '';
             }
             supabaseInstance = null;
         },

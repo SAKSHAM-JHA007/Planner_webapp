@@ -58,3 +58,74 @@ test('POST /api/boards creates board and validates title', async () => {
     });
     assert.strictEqual(failRes.status, 400);
 });
+
+test('GET /api/config returns configuration shape', async () => {
+    const res = await fetch(`${baseUrl}/api/config`);
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+    assert.ok('supabaseUrl' in data);
+    assert.ok('supabaseAnonKey' in data);
+});
+
+test('POST /api/tasks supports category and body userId', async () => {
+    const res = await fetch(`${baseUrl}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Categorized Task', category: 'Important', userId: 'user-123' })
+    });
+    assert.strictEqual(res.status, 201);
+    const data = await res.json();
+    assert.strictEqual(data.title, 'Categorized Task');
+    assert.strictEqual(data.category, 'Important');
+    assert.strictEqual(data.user_id, 'user-123');
+});
+
+test('POST /api/login rejects missing credentials', async () => {
+    const res = await fetch(`${baseUrl}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: '' })
+    });
+    assert.strictEqual(res.status, 400);
+});
+
+test('POST /api/signup updates users.txt automatically', async () => {
+    const uniqueEmail = `autouser_${Date.now()}@example.com`;
+    const res = await fetch(`${baseUrl}/api/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Auto Test User', email: uniqueEmail, password: 'password123' })
+    });
+    assert.strictEqual(res.status, 201);
+    await new Promise(r => setTimeout(r, 150));
+    const fs = require('fs');
+    const path = require('path');
+    const content = fs.readFileSync(path.join(__dirname, '..', 'users.txt'), 'utf8');
+    assert.ok(content.includes(uniqueEmail), 'users.txt should contain newly registered user email');
+});
+
+test('POST /api/sync-user records Supabase/OAuth users and updates users.txt', async () => {
+    const oauthEmail = `oauth_user_${Date.now()}@gmail.com`;
+    const res = await fetch(`${baseUrl}/api/sync-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'OAuth User', email: oauthEmail })
+    });
+    assert.strictEqual(res.status, 201);
+    await new Promise(r => setTimeout(r, 150));
+    const fs = require('fs');
+    const path = require('path');
+    const content = fs.readFileSync(path.join(__dirname, '..', 'users.txt'), 'utf8');
+    assert.ok(content.includes(oauthEmail), 'users.txt should contain synced OAuth user');
+});
+
+test('GET /api/users/export serves downloadable users.txt', async () => {
+    const res = await fetch(`${baseUrl}/api/users/export`);
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.headers.get('content-type').includes('text/plain'));
+    const text = await res.text();
+    assert.ok(text.includes('FLOWBOARD - REGISTERED USERS DATA'));
+});
+
+
+
