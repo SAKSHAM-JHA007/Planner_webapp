@@ -751,7 +751,10 @@ app.get('/api/tasks', (req, res) => {
 });
 
 app.post('/api/tasks', (req, res) => {
-    const userId = req.body.userId || req.headers['user-id'] || 1;
+    const userId = req.body.userId || req.headers['user-id'];
+    if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized: userId required' });
+    }
     const { title, description, status, due_date, priority, category } = req.body;
 
     if (!title) {
@@ -837,7 +840,10 @@ app.get('/api/boards', (req, res) => {
 });
 
 app.post('/api/boards', (req, res) => {
-    const userId = req.headers['user-id'] || 1;
+    const userId = req.body.userId || req.headers['user-id'];
+    if (!userId) {
+        return res.status(401).json({ error: 'Unauthorized: userId required' });
+    }
     const { title, description, icon, color } = req.body;
 
     if (!title) {

@@ -59,6 +59,28 @@ test('POST /api/boards creates board and validates title', async () => {
     assert.strictEqual(failRes.status, 400);
 });
 
+test('POST /api/boards rejects request without userId', async () => {
+    const res = await fetch(`${baseUrl}/api/boards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Unauthenticated Board' })
+    });
+    assert.strictEqual(res.status, 401);
+    const data = await res.json();
+    assert.strictEqual(data.error, 'Unauthorized: userId required');
+});
+
+test('POST /api/tasks rejects request without userId', async () => {
+    const res = await fetch(`${baseUrl}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Unauthenticated Task' })
+    });
+    assert.strictEqual(res.status, 401);
+    const data = await res.json();
+    assert.strictEqual(data.error, 'Unauthorized: userId required');
+});
+
 test('GET /api/config returns configuration shape', async () => {
     const res = await fetch(`${baseUrl}/api/config`);
     assert.strictEqual(res.status, 200);
