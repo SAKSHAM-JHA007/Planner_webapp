@@ -246,14 +246,15 @@ class ServerlessDB {
             // INSERT INTO users
             if (upper.startsWith('INSERT INTO USERS')) {
                 const [full_name, email, password_hash] = params;
-                const existing = this.data.users.find(u => u.email.toLowerCase() === (email || '').toLowerCase());
+                const targetEmail = (email || '').toLowerCase();
+                const existing = this.data.users.find(u => u.email.toLowerCase() === targetEmail);
                 if (existing) {
                     const err = new Error('UNIQUE constraint failed: users.email');
                     if (cb) return cb.call(context, err);
                     return;
                 }
                 const id = ++this.counters.users;
-                const user = { id, full_name, email: (email || '').toLowerCase(), password_hash, created_at: new Date().toISOString() };
+                const user = { id, full_name, email: targetEmail, password_hash, created_at: new Date().toISOString() };
                 this.data.users.push(user);
                 this.save();
                 context.lastID = id;
@@ -493,7 +494,8 @@ class ServerlessDB {
             // SELECT * FROM users WHERE email = ?
             if (upper.includes('FROM USERS WHERE EMAIL = ?')) {
                 const [email] = params;
-                const user = this.data.users.find(u => u.email.toLowerCase() === (email || '').toLowerCase()) || null;
+                const targetEmail = (email || '').toLowerCase();
+                const user = this.data.users.find(u => u.email.toLowerCase() === targetEmail) || null;
                 if (cb) cb(null, user);
                 return;
             }
