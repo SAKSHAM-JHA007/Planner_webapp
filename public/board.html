@@ -865,7 +865,7 @@
             try {
                 const res = await fetch(`/api/boards/${boardId}/elements`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'user-id': user ? user.id : '' },
                     body: JSON.stringify({
                         type: 'note',
                         x: centerX,
@@ -893,7 +893,7 @@
             try {
                 const res = await fetch(`/api/boards/${boardId}/elements`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'user-id': user ? user.id : '' },
                     body: JSON.stringify({
                         type: 'todo',
                         x: centerX,
@@ -921,7 +921,7 @@
             try {
                 const res = await fetch(`/api/boards/${boardId}/elements`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'user-id': user ? user.id : '' },
                     body: JSON.stringify({
                         type: 'link',
                         x: centerX,
@@ -982,7 +982,7 @@
 
                 const elementRes = await fetch(`/api/boards/${boardId}/elements`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'user-id': user ? user.id : '' },
                     body: JSON.stringify({
                         type: isImage ? 'image' : 'document',
                         x: posX,

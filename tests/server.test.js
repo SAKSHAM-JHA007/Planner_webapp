@@ -149,5 +149,43 @@ test('GET /api/users/export serves downloadable users.txt', async () => {
     assert.ok(text.includes('FLOWBOARD - REGISTERED USERS DATA'));
 });
 
+test('POST /api/boards/:id/elements validates authorization and ownership', async () => {
+    // First create a board for user '10'
+    const createBoardRes = await fetch(`${baseUrl}/api/boards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '10' },
+        body: JSON.stringify({ title: 'User 10 Board' })
+    });
+    assert.strictEqual(createBoardRes.status, 201);
+    const board = await createBoardRes.json();
+    const boardId = board.id;
+
+    // 1. Missing userId should return 403
+    const noAuthRes = await fetch(`${baseUrl}/api/boards/${boardId}/elements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'note', content: 'Test note' })
+    });
+    assert.strictEqual(noAuthRes.status, 403);
+
+    // 2. Wrong userId (e.g., '999') should return 404 (board not found or unauthorized)
+    const wrongUserRes = await fetch(`${baseUrl}/api/boards/${boardId}/elements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '999' },
+        body: JSON.stringify({ type: 'note', content: 'Test note' })
+    });
+    assert.strictEqual(wrongUserRes.status, 404);
+
+    // 3. Correct userId ('10') should return 201
+    const successRes = await fetch(`${baseUrl}/api/boards/${boardId}/elements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '10' },
+        body: JSON.stringify({ type: 'note', content: 'Test note' })
+    });
+    assert.strictEqual(successRes.status, 201);
+    const el = await successRes.json();
+    assert.strictEqual(el.type, 'note');
+    assert.strictEqual(el.board_id, boardId);
+});
 
 
