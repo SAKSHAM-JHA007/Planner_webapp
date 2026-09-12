@@ -5,3 +5,4 @@ check.js
 test.js
 uploads/*
 !uploads/.gitkeep
+*.db
