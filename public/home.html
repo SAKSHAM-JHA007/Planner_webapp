@@ -349,11 +349,17 @@
             };
 
             Object.values(cols).forEach(col => col.innerHTML = '');
+            const fragments = {
+                todo: document.createDocumentFragment(),
+                in_progress: document.createDocumentFragment(),
+                done: document.createDocumentFragment()
+            };
             const counts = { todo: 0, in_progress: 0, done: 0 };
 
             tasks.forEach(task => {
-                const col = cols[task.status] || cols.todo;
-                counts[task.status] = (counts[task.status] || 0) + 1;
+                const status = cols[task.status] ? task.status : 'todo';
+                const fragment = fragments[status];
+                counts[status] = (counts[status] || 0) + 1;
 
                 const card = document.createElement('div');
                 card.className = "task-card bg-surface-container-lowest p-4 rounded-xl card-shadow border border-outline-variant/60 cursor-grab active:cursor-grabbing hover:border-primary transition-colors flex flex-col gap-2";
@@ -392,7 +398,13 @@
                     '</div>' +
                     '</div>' +
                     (task.description ? '<p class="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">' + escapeHtml(task.description) + '</p>' : '');
-                col.appendChild(card);
+                fragment.appendChild(card);
+            });
+
+            Object.keys(cols).forEach(status => {
+                if (cols[status]) {
+                    cols[status].appendChild(fragments[status]);
+                }
             });
 
             Object.keys(counts).forEach(status => {
