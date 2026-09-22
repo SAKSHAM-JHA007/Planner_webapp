@@ -126,19 +126,80 @@ test('POST /api/signup updates users.txt automatically', async () => {
     assert.ok(content.includes(uniqueEmail), 'users.txt should contain newly registered user email');
 });
 
-test('POST /api/sync-user records Supabase/OAuth users and updates users.txt', async () => {
-    const oauthEmail = `oauth_user_${Date.now()}@gmail.com`;
+test('POST /api/sync-user rejects request without authentication token', async () => {
     const res = await fetch(`${baseUrl}/api/sync-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'OAuth User', email: oauthEmail })
+        body: JSON.stringify({ name: 'Unauthenticated User', email: 'unauth@gmail.com' })
     });
-    assert.strictEqual(res.status, 201);
-    await new Promise(r => setTimeout(r, 150));
-    const fs = require('fs');
-    const path = require('path');
-    const content = fs.readFileSync(path.join(__dirname, '..', 'users.txt'), 'utf8');
-    assert.ok(content.includes(oauthEmail), 'users.txt should contain synced OAuth user');
+    assert.strictEqual(res.status, 401);
+    const data = await res.json();
+    assert.strictEqual(data.error, 'Authentication token is required.');
+});
+
+test('POST /api/sync-user verifies token against external provider when SUPABASE_URL is configured', async () => {
+    const http = require('node:http');
+    let mockSupabaseServer;
+    let mockUrl;
+
+    const oauthEmail = `oauth_verified_${Date.now()}@gmail.com`;
+
+    await new Promise((resolve) => {
+        mockSupabaseServer = http.createServer((req, res) => {
+            if (req.url === '/auth/v1/user') {
+                const auth = req.headers['authorization'];
+                if (auth === 'Bearer valid_token') {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ email: oauthEmail }));
+                } else if (auth === 'Bearer mismatch_token') {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ email: 'mismatch@gmail.com' }));
+                } else {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Invalid token' }));
+                }
+            } else {
+                res.writeHead(404);
+                res.end();
+            }
+        });
+        mockSupabaseServer.listen(0, () => {
+            mockUrl = `http://127.0.0.1:${mockSupabaseServer.address().port}`;
+            resolve();
+        });
+    });
+
+    const origUrl = process.env.SUPABASE_URL;
+    process.env.SUPABASE_URL = mockUrl;
+
+    try {
+        // 1. Invalid token -> 401
+        const invalidRes = await fetch(`${baseUrl}/api/sync-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer invalid_token' },
+            body: JSON.stringify({ name: 'OAuth User', email: oauthEmail })
+        });
+        assert.strictEqual(invalidRes.status, 401);
+
+        // 2. Token email mismatch -> 400
+        const mismatchRes = await fetch(`${baseUrl}/api/sync-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer mismatch_token' },
+            body: JSON.stringify({ name: 'OAuth User', email: oauthEmail })
+        });
+        assert.strictEqual(mismatchRes.status, 400);
+
+        // 3. Valid token -> 201
+        const validRes = await fetch(`${baseUrl}/api/sync-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer valid_token' },
+            body: JSON.stringify({ name: 'OAuth User', email: oauthEmail })
+        });
+        assert.strictEqual(validRes.status, 201);
+    } finally {
+        process.env.SUPABASE_URL = origUrl;
+        if (mockSupabaseServer) await new Promise((resolve) => mockSupabaseServer.close(resolve));
+    }
 });
 
 test('GET /api/users/export serves downloadable users.txt', async () => {
