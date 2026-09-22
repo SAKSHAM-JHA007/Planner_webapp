@@ -670,11 +670,45 @@ app.get('/api/users/export', (req, res) => {
 });
 
 // Auto-sync endpoint for recording external/Supabase/OAuth signins & signups
-app.post('/api/sync-user', (req, res) => {
-    const { name, email } = req.body;
+app.post('/api/sync-user', async (req, res) => {
+    const { name, email, token: bodyToken } = req.body || {};
     if (!email) return res.status(400).json({ error: 'Email is required.' });
+
+    const authHeader = req.headers['authorization'] || '';
+    const token = authHeader.startsWith('Bearer ')
+        ? authHeader.slice(7).trim()
+        : (req.headers['x-auth-token'] || bodyToken || '').trim();
+
+    if (!token) {
+        return res.status(401).json({ error: 'Authentication token is required.' });
+    }
+
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = (name || cleanEmail.split('@')[0]).trim();
+
+    const supabaseUrl = (process.env.SUPABASE_URL || '').trim();
+    const supabaseKey = (process.env.SUPABASE_ANON_KEY || '').trim();
+
+    if (supabaseUrl) {
+        try {
+            const verifyUrl = `${supabaseUrl.replace(/\/+$/, '')}/auth/v1/user`;
+            const headers = { 'Authorization': `Bearer ${token}` };
+            if (supabaseKey) headers['apikey'] = supabaseKey;
+
+            const verifyRes = await fetch(verifyUrl, { method: 'GET', headers });
+            if (!verifyRes.ok) {
+                return res.status(401).json({ error: 'Invalid or expired authentication token.' });
+            }
+            const userData = await verifyRes.json();
+            if (!userData || !userData.email || userData.email.toLowerCase() !== cleanEmail) {
+                return res.status(400).json({ error: 'Token email does not match requested email.' });
+            }
+        } catch (err) {
+            return res.status(500).json({ error: 'Failed to verify authentication token with provider.' });
+        }
+    } else if (process.env.NODE_ENV !== 'test') {
+        return res.status(501).json({ error: 'External authentication provider is not configured.' });
+    }
 
     db.get('SELECT * FROM users WHERE email = ?', [cleanEmail], (err, user) => {
         if (err) return res.status(500).json({ error: 'Database error.' });

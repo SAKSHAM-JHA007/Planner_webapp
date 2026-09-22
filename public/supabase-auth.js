@@ -34,15 +34,20 @@
         };
     }
 
-    function storeUserLocally(userObj) {
+    function storeUserLocally(userObj, accessToken) {
         if (typeof localStorage !== 'undefined') {
             if (userObj) {
                 localStorage.setItem('user', JSON.stringify(userObj));
                 if (typeof fetch === 'function' && userObj.email) {
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (accessToken) {
+                        headers['Authorization'] = `Bearer ${accessToken}`;
+                    }
+
                     fetch('/api/sync-user', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: userObj.name, email: userObj.email, id: userObj.id })
+                        headers: headers,
+                        body: JSON.stringify({ name: userObj.name, email: userObj.email, id: userObj.id, token: accessToken })
                     }).catch(() => {});
                 }
             } else {
@@ -62,7 +67,7 @@
                 if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
                     if (session?.user) {
                         const userObj = formatUser(session.user);
-                        storeUserLocally(userObj);
+                        storeUserLocally(userObj, session?.access_token);
                     }
                 }
             });
@@ -107,7 +112,7 @@
 
             if (data?.session && data?.user) {
                 const userObj = formatUser(data.user);
-                storeUserLocally(userObj);
+                storeUserLocally(userObj, data.session?.access_token);
                 return { user: userObj, session: data.session, emailConfirmationRequired: false };
             } else {
                 // Email confirmation is required by Supabase project settings
@@ -139,7 +144,7 @@
 
             if (data?.user) {
                 const userObj = formatUser(data.user);
-                storeUserLocally(userObj);
+                storeUserLocally(userObj, data.session?.access_token);
                 return { user: userObj, session: data.session };
             }
 
@@ -245,7 +250,7 @@
 
                     if (session?.user) {
                         const userObj = formatUser(session.user);
-                        storeUserLocally(userObj);
+                        storeUserLocally(userObj, session?.access_token);
                         return userObj;
                     }
                 } catch (e) {
