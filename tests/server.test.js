@@ -250,4 +250,119 @@ test('POST /api/boards/:id/connections requires authorization and ownership', as
     assert.strictEqual(connData.style, 'dashed');
 });
 
+test('POST, PUT, DELETE /api/boards/:id/elements require authorization and ownership', async () => {
+    // 1. Create board for User 10
+    const boardRes = await fetch(`${baseUrl}/api/boards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '10' },
+        body: JSON.stringify({ title: 'User 10 Board' })
+    });
+    assert.strictEqual(boardRes.status, 201);
+    const board = await boardRes.json();
+
+    // 2. Element creation without userId -> 401
+    const unauthCreate = await fetch(`${baseUrl}/api/boards/${board.id}/elements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'note', content: 'Secret Note' })
+    });
+    assert.strictEqual(unauthCreate.status, 401);
+
+    // 3. Element creation by wrong user -> 404
+    const wrongUserCreate = await fetch(`${baseUrl}/api/boards/${board.id}/elements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '99' },
+        body: JSON.stringify({ type: 'note', content: 'Secret Note' })
+    });
+    assert.strictEqual(wrongUserCreate.status, 404);
+
+    // 4. Element creation by owner (User 10) -> 201
+    const validCreate = await fetch(`${baseUrl}/api/boards/${board.id}/elements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '10' },
+        body: JSON.stringify({ type: 'note', content: 'My Note' })
+    });
+    assert.strictEqual(validCreate.status, 201);
+    const element = await validCreate.json();
+
+    // 5. Element update without userId -> 403
+    const unauthUpdate = await fetch(`${baseUrl}/api/boards/${board.id}/elements/${element.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ x: 150 })
+    });
+    assert.strictEqual(unauthUpdate.status, 403);
+
+    // 6. Element update by wrong user -> 404
+    const wrongUserUpdate = await fetch(`${baseUrl}/api/boards/${board.id}/elements/${element.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'user-id': '99' },
+        body: JSON.stringify({ x: 150 })
+    });
+    assert.strictEqual(wrongUserUpdate.status, 404);
+
+    // 7. Element update by owner -> 200
+    const validUpdate = await fetch(`${baseUrl}/api/boards/${board.id}/elements/${element.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'user-id': '10' },
+        body: JSON.stringify({ x: 150 })
+    });
+    assert.strictEqual(validUpdate.status, 200);
+
+    // 8. Element deletion without userId -> 403
+    const unauthDelete = await fetch(`${baseUrl}/api/boards/${board.id}/elements/${element.id}`, {
+        method: 'DELETE'
+    });
+    assert.strictEqual(unauthDelete.status, 403);
+
+    // 9. Element deletion by wrong user -> 404
+    const wrongUserDelete = await fetch(`${baseUrl}/api/boards/${board.id}/elements/${element.id}?userId=99`, {
+        method: 'DELETE'
+    });
+    assert.strictEqual(wrongUserDelete.status, 404);
+
+    // 10. Element deletion by owner -> 200
+    const validDelete = await fetch(`${baseUrl}/api/boards/${board.id}/elements/${element.id}?userId=10`, {
+        method: 'DELETE'
+    });
+    assert.strictEqual(validDelete.status, 200);
+});
+
+test('DELETE /api/boards/:id/connections/:connId requires authorization and ownership', async () => {
+    // Create board for User 12
+    const boardRes = await fetch(`${baseUrl}/api/boards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '12' },
+        body: JSON.stringify({ title: 'User 12 Board' })
+    });
+    assert.strictEqual(boardRes.status, 201);
+    const board = await boardRes.json();
+
+    // Create connection
+    const connRes = await fetch(`${baseUrl}/api/boards/${board.id}/connections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'user-id': '12' },
+        body: JSON.stringify({ from_id: 1, to_id: 2 })
+    });
+    assert.strictEqual(connRes.status, 201);
+    const conn = await connRes.json();
+
+    // Delete connection without userId -> 403
+    const unauthDelete = await fetch(`${baseUrl}/api/boards/${board.id}/connections/${conn.id}`, {
+        method: 'DELETE'
+    });
+    assert.strictEqual(unauthDelete.status, 403);
+
+    // Delete connection with wrong userId -> 404
+    const wrongUserDelete = await fetch(`${baseUrl}/api/boards/${board.id}/connections/${conn.id}?userId=99`, {
+        method: 'DELETE'
+    });
+    assert.strictEqual(wrongUserDelete.status, 404);
+
+    // Delete connection with owner userId -> 200
+    const validDelete = await fetch(`${baseUrl}/api/boards/${board.id}/connections/${conn.id}?userId=12`, {
+        method: 'DELETE'
+    });
+    assert.strictEqual(validDelete.status, 200);
+});
 

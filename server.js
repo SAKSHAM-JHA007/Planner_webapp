@@ -818,8 +818,9 @@ app.post('/api/tasks', (req, res) => {
 
 app.put('/api/tasks/:id', (req, res) => {
     const taskId = req.params.id;
-    const { title, description, status, category, due_date, userId } = req.body;
+    const userId = req.headers['user-id'] || (req.body && req.body.userId) || req.query.userId;
     if (!userId) return res.status(403).json({ error: 'Unauthorized: userId required.' });
+    const { title, description, status, category, due_date } = req.body;
     db.run(
         'UPDATE tasks SET title = COALESCE(?, title), description = COALESCE(?, description), status = COALESCE(?, status), category = COALESCE(?, category), due_date = COALESCE(?, due_date) WHERE id = ? AND user_id = ?',
         [title, description, status, category, due_date, taskId, userId],
@@ -938,8 +939,9 @@ app.get('/api/boards/:id', (req, res) => {
 
 app.put('/api/boards/:id', (req, res) => {
     const boardId = req.params.id;
-    const { title, description, icon, color, userId } = req.body;
+    const userId = req.headers['user-id'] || (req.body && req.body.userId) || req.query.userId;
     if (!userId) return res.status(403).json({ error: 'Unauthorized: userId required.' });
+    const { title, description, icon, color } = req.body;
 
     db.run(
         'UPDATE boards SET title = COALESCE(?, title), description = COALESCE(?, description), icon = COALESCE(?, icon), color = COALESCE(?, color) WHERE id = ? AND user_id = ?',
@@ -978,88 +980,111 @@ app.delete('/api/boards/:id', (req, res) => {
 // ----------------------------------------------------
 app.post('/api/boards/:id/elements', (req, res) => {
     const boardId = req.params.id;
+    const userId = req.headers['user-id'] || (req.body && req.body.userId) || req.query.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized: userId required' });
+
     const { type, x, y, width, height, content, file_url, file_name, file_size, file_type, color, z_index } = req.body;
 
     if (!type) return res.status(400).json({ error: 'Element type is required.' });
 
-    db.run(
-        `INSERT INTO board_elements 
-        (board_id, type, x, y, width, height, content, file_url, file_name, file_size, file_type, color, z_index) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-            boardId,
-            type,
-            x !== undefined ? x : 100,
-            y !== undefined ? y : 100,
-            width !== undefined ? width : 260,
-            height !== undefined ? height : 180,
-            content || '',
-            file_url || null,
-            file_name || null,
-            file_size || null,
-            file_type || null,
-            color || '#ffffff',
-            z_index !== undefined ? z_index : 1
-        ],
-        function (err) {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ error: 'Database error creating element.' });
-            }
-            res.status(201).json({
-                id: this.lastID,
-                board_id: Number(boardId),
+    db.get('SELECT * FROM boards WHERE id = ? AND user_id = ?', [boardId, userId], (err, board) => {
+        if (err) return res.status(500).json({ error: 'Database error.' });
+        if (!board) return res.status(404).json({ error: 'Board not found or unauthorized.' });
+
+        db.run(
+            `INSERT INTO board_elements
+            (board_id, type, x, y, width, height, content, file_url, file_name, file_size, file_type, color, z_index)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                boardId,
                 type,
-                x: x !== undefined ? x : 100,
-                y: y !== undefined ? y : 100,
-                width: width !== undefined ? width : 260,
-                height: height !== undefined ? height : 180,
-                content: content || '',
-                file_url: file_url || null,
-                file_name: file_name || null,
-                file_size: file_size || null,
-                file_type: file_type || null,
-                color: color || '#ffffff',
-                z_index: z_index !== undefined ? z_index : 1
-            });
-        }
-    );
+                x !== undefined ? x : 100,
+                y !== undefined ? y : 100,
+                width !== undefined ? width : 260,
+                height !== undefined ? height : 180,
+                content || '',
+                file_url || null,
+                file_name || null,
+                file_size || null,
+                file_type || null,
+                color || '#ffffff',
+                z_index !== undefined ? z_index : 1
+            ],
+            function (err) {
+                if (err) {
+                    console.error(err);
+                    return res.status(500).json({ error: 'Database error creating element.' });
+                }
+                res.status(201).json({
+                    id: this.lastID,
+                    board_id: Number(boardId),
+                    type,
+                    x: x !== undefined ? x : 100,
+                    y: y !== undefined ? y : 100,
+                    width: width !== undefined ? width : 260,
+                    height: height !== undefined ? height : 180,
+                    content: content || '',
+                    file_url: file_url || null,
+                    file_name: file_name || null,
+                    file_size: file_size || null,
+                    file_type: file_type || null,
+                    color: color || '#ffffff',
+                    z_index: z_index !== undefined ? z_index : 1
+                });
+            }
+        );
+    });
 });
 
 app.put('/api/boards/:id/elements/:elementId', (req, res) => {
     const boardId = req.params.id;
     const elementId = req.params.elementId;
+    const userId = req.headers['user-id'] || (req.body && req.body.userId) || req.query.userId;
+    if (!userId) return res.status(403).json({ error: 'Unauthorized: userId required.' });
+
     const { x, y, width, height, content, color, z_index } = req.body;
 
-    db.run(
-        `UPDATE board_elements SET 
-            x = COALESCE(?, x), 
-            y = COALESCE(?, y), 
-            width = COALESCE(?, width), 
-            height = COALESCE(?, height), 
-            content = COALESCE(?, content), 
-            color = COALESCE(?, color), 
-            z_index = COALESCE(?, z_index) 
-        WHERE id = ? AND board_id = ?`,
-        [x, y, width, height, content, color, z_index, elementId, boardId],
-        function (err) {
-            if (err) return res.status(500).json({ error: 'Database error updating element.' });
-            if (this.changes === 0) return res.status(404).json({ error: 'Element not found.' });
-            res.json({ success: true });
-        }
-    );
+    db.get('SELECT * FROM boards WHERE id = ? AND user_id = ?', [boardId, userId], (err, board) => {
+        if (err) return res.status(500).json({ error: 'Database error.' });
+        if (!board) return res.status(404).json({ error: 'Board not found or unauthorized.' });
+
+        db.run(
+            `UPDATE board_elements SET
+                x = COALESCE(?, x),
+                y = COALESCE(?, y),
+                width = COALESCE(?, width),
+                height = COALESCE(?, height),
+                content = COALESCE(?, content),
+                color = COALESCE(?, color),
+                z_index = COALESCE(?, z_index)
+            WHERE id = ? AND board_id = ?`,
+            [x, y, width, height, content, color, z_index, elementId, boardId],
+            function (err) {
+                if (err) return res.status(500).json({ error: 'Database error updating element.' });
+                if (this.changes === 0) return res.status(404).json({ error: 'Element not found.' });
+                res.json({ success: true });
+            }
+        );
+    });
 });
 
 app.delete('/api/boards/:id/elements/:elementId', (req, res) => {
     const boardId = req.params.id;
     const elementId = req.params.elementId;
+    const userId = req.headers['user-id'] || (req.body && req.body.userId) || req.query.userId;
+    if (!userId) return res.status(403).json({ error: 'Unauthorized: userId required.' });
 
-    db.serialize(() => {
-        db.run('DELETE FROM board_connections WHERE from_id = ? OR to_id = ?', [elementId, elementId]);
-        db.run('DELETE FROM board_elements WHERE id = ? AND board_id = ?', [elementId, boardId], function (err) {
-            if (err) return res.status(500).json({ error: 'Database error deleting element.' });
-            if (this.changes === 0) return res.status(404).json({ error: 'Element not found.' });
-            res.json({ success: true });
+    db.get('SELECT * FROM boards WHERE id = ? AND user_id = ?', [boardId, userId], (err, board) => {
+        if (err) return res.status(500).json({ error: 'Database error.' });
+        if (!board) return res.status(404).json({ error: 'Board not found or unauthorized.' });
+
+        db.serialize(() => {
+            db.run('DELETE FROM board_connections WHERE from_id = ? OR to_id = ?', [elementId, elementId]);
+            db.run('DELETE FROM board_elements WHERE id = ? AND board_id = ?', [elementId, boardId], function (err) {
+                if (err) return res.status(500).json({ error: 'Database error deleting element.' });
+                if (this.changes === 0) return res.status(404).json({ error: 'Element not found.' });
+                res.json({ success: true });
+            });
         });
     });
 });
@@ -1108,11 +1133,18 @@ app.post('/api/boards/:id/connections', (req, res) => {
 app.delete('/api/boards/:id/connections/:connId', (req, res) => {
     const boardId = req.params.id;
     const connId = req.params.connId;
+    const userId = req.headers['user-id'] || (req.body && req.body.userId) || req.query.userId;
+    if (!userId) return res.status(403).json({ error: 'Unauthorized: userId required.' });
 
-    db.run('DELETE FROM board_connections WHERE id = ? AND board_id = ?', [connId, boardId], function (err) {
-        if (err) return res.status(500).json({ error: 'Database error deleting connection.' });
-        if (this.changes === 0) return res.status(404).json({ error: 'Connection not found.' });
-        res.json({ success: true });
+    db.get('SELECT * FROM boards WHERE id = ? AND user_id = ?', [boardId, userId], (err, board) => {
+        if (err) return res.status(500).json({ error: 'Database error.' });
+        if (!board) return res.status(404).json({ error: 'Board not found or unauthorized.' });
+
+        db.run('DELETE FROM board_connections WHERE id = ? AND board_id = ?', [connId, boardId], function (err) {
+            if (err) return res.status(500).json({ error: 'Database error deleting connection.' });
+            if (this.changes === 0) return res.status(404).json({ error: 'Connection not found.' });
+            res.json({ success: true });
+        });
     });
 });
 

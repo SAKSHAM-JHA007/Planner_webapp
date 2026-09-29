@@ -643,11 +643,12 @@
             try {
                 await fetch(`/api/boards/${boardId}/elements/${updatedEl.id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'user-id': user.id },
                     body: JSON.stringify({
                         x: updatedEl.x,
                         y: updatedEl.y,
-                        z_index: updatedEl.z_index
+                        z_index: updatedEl.z_index,
+                        userId: user.id
                     })
                 });
             } catch (err) {
@@ -847,7 +848,10 @@
         async function deleteConnection(connId) {
             if (!confirm('Remove this connection line?')) return;
             try {
-                const res = await fetch(`/api/boards/${boardId}/connections/${connId}`, { method: 'DELETE' });
+                const res = await fetch(`/api/boards/${boardId}/connections/${connId}?userId=${user.id}`, {
+                    method: 'DELETE',
+                    headers: { 'user-id': user.id }
+                });
                 if (res.ok) {
                     connections = connections.filter(c => c.id !== connId);
                     renderAllConnections();
@@ -865,7 +869,7 @@
             try {
                 const res = await fetch(`/api/boards/${boardId}/elements`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'user-id': user.id },
                     body: JSON.stringify({
                         type: 'note',
                         x: centerX,
@@ -873,7 +877,8 @@
                         width: 260,
                         height: 180,
                         color: NOTE_COLORS.yellow,
-                        content: JSON.stringify({ title: 'New Note', text: '' })
+                        content: JSON.stringify({ title: 'New Note', text: '' }),
+                        userId: user.id
                     })
                 });
                 if (res.ok) {
@@ -893,7 +898,7 @@
             try {
                 const res = await fetch(`/api/boards/${boardId}/elements`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'user-id': user.id },
                     body: JSON.stringify({
                         type: 'todo',
                         x: centerX,
@@ -901,7 +906,8 @@
                         width: 280,
                         height: 200,
                         color: '#ffffff',
-                        content: JSON.stringify({ title: 'Checklist', items: [{ text: 'First task', done: false }] })
+                        content: JSON.stringify({ title: 'Checklist', items: [{ text: 'First task', done: false }] }),
+                        userId: user.id
                     })
                 });
                 if (res.ok) {
@@ -921,7 +927,7 @@
             try {
                 const res = await fetch(`/api/boards/${boardId}/elements`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'user-id': user.id },
                     body: JSON.stringify({
                         type: 'link',
                         x: centerX,
@@ -929,7 +935,8 @@
                         width: 260,
                         height: 150,
                         color: '#ffffff',
-                        content: JSON.stringify({ title: 'Creative Inspiration', url: 'https://milanote.com' })
+                        content: JSON.stringify({ title: 'Creative Inspiration', url: 'https://milanote.com' }),
+                        userId: user.id
                     })
                 });
                 if (res.ok) {
@@ -982,7 +989,7 @@
 
                 const elementRes = await fetch(`/api/boards/${boardId}/elements`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'user-id': user.id },
                     body: JSON.stringify({
                         type: isImage ? 'image' : 'document',
                         x: posX,
@@ -994,7 +1001,8 @@
                         file_name: fileInfo.file_name,
                         file_type: fileInfo.file_type,
                         file_size: fileInfo.file_size,
-                        content: isImage ? fileInfo.file_name : ''
+                        content: isImage ? fileInfo.file_name : '',
+                        userId: user.id
                     })
                 });
 
@@ -1117,8 +1125,8 @@
             try {
                 await fetch(`/api/boards/${boardId}/elements/${id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updates)
+                    headers: { 'Content-Type': 'application/json', 'user-id': user.id },
+                    body: JSON.stringify({ ...updates, userId: user.id })
                 });
             } catch (err) {
                 console.error(err);
@@ -1128,7 +1136,10 @@
         async function deleteElement(id) {
             if (!confirm('Delete this card?')) return;
             try {
-                const res = await fetch(`/api/boards/${boardId}/elements/${id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/boards/${boardId}/elements/${id}?userId=${user.id}`, {
+                    method: 'DELETE',
+                    headers: { 'user-id': user.id }
+                });
                 if (res.ok) {
                     elements = elements.filter(el => el.id !== id);
                     connections = connections.filter(c => c.from_id !== id && c.to_id !== id);
